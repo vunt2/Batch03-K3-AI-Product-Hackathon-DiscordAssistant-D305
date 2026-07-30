@@ -1,7 +1,7 @@
 # AI SPEC — Định tuyến câu hỏi học viên Discord · Nhóm D305
 
-> **Trạng thái:** CHÍNH THỨC — Hoàn thiện mốc CP3 (Real AI Integration & Safety Contract Evaluation).
-> Quality bar đã được chốt và khóa cứng tại §7 trước khi chạy đánh giá chính thức.
+> **Trạng thái:** CHÍNH THỨC — Hoàn thiện mốc CP3 (Real AI Integration & Safety Contract Design).
+> Quality bar đã được chốt và khóa cứng tại §7 trước khi Phong thực hiện lượt đánh giá Live chính thức.
 
 Hướng: [ ] A — VLearn  [x] B — Trợ lý Học viên  [ ] C — Làn mở  
 Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
@@ -12,34 +12,40 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 - **Workflow hiện tại:** Học viên đăng câu hỏi → chờ TA/giảng viên hoặc thành viên khác đọc → người trả lời tự xác định loại câu hỏi → trả lời hoặc chuyển đúng người.
 - **Core JTBD:** Nhận được hướng xử lý phù hợp cho câu hỏi trong lúc học để có thể tiếp tục công việc mà không phải chờ hoặc làm theo thông tin thiếu căn cứ.
 - **Problem statement (không dùng chữ AI):** Khi học viên đăng câu hỏi trong Discord, nội dung ngắn, mơ hồ hoặc thuộc nhiều loại khác nhau khiến việc phản hồi dễ sai mức; đặc biệt, trả lời sai deadline hoặc link nộp bài có thể làm học viên nộp muộn hoặc nộp sai nơi.
-- **Evidence (Phương pháp kết hợp Chuẩn A & Chuẩn B):**
-  - **Chuẩn A (Khảo sát):** Khảo sát độc lập $n = 28$ học viên ngoài nhóm, $20/28$ người (**71.4%**) xác nhận từng bị nhầm lẫn thông tin logistics hoặc phải chờ lãng phí 15–45 phút làm rõ câu hỏi mơ hồ. Chi tiết: `evidence/survey-log.md`.
-  - **Chuẩn B (Mining Chatlog):** Thu thập $n = 100$ tin nhắn mẫu trên Discord khóa học. Phân bổ intent: 42% Hỏi bài (`learning`), 28% Logistics (`logistics`), 18% Mơ hồ (`ambiguous`), 8% Chào hỏi (`greeting`), 4% Ngoài phạm vi (`out_of_scope`). Chi tiết: `evidence/discord-mining-method.md`.
+- **Evidence (Nguồn: Khảo sát $N=20$ gồm $n=18$ học viên và $n=2$ TA — Chi tiết tại `evidence/survey-summary.md`):**
+  - **Số liệu khảo sát học viên ($n = 18$):**
+    - **72.2%** ($13/18$) học viên dùng Discord hằng ngày để học tập.
+    - **88.9%** ($16/18$) học viên mất ít nhất 1 phút để tìm thông tin logistics trên Discord.
+    - **83.3%** ($15/18$) học viên từng từ bỏ tìm kiếm thông tin vì mất quá nhiều thời gian.
+    - **83.3%** ($15/18$) học viên mong muốn trợ lý AI giải đáp thắc mắc chuyên môn ngay lập tức.
+    - **61.1%** ($11/18$) học viên yêu cầu chuyển TA (Handoff) khi AI không chắc chắn thông tin.
+    - **66.7%** ($12/18$) học viên mong muốn AI chủ động hỗ trợ khi bị stuck bài tập.
+  - **Khảo sát TA ($n = 2$):** $>60\%$ câu hỏi hằng ngày thuộc dạng câu hỏi logistics lặp đi lặp lại.
   - **5 Trích dẫn Nguyên văn (Đã ẩn danh):**
-    1. *"Anh ơi deadline Checkpoint 3 chốt 23:59 hôm nay hay trưa mai vậy ạ?"* (`DC-MINING-014` - `logistics`)
-    2. *"Em bị lỗi code rồi giúp em với ạ"* (`DC-MINING-027` - `ambiguous`)
-    3. *"Cho mình hỏi làm sao để truyền session state qua các page khác nhau trong Streamlit vậy?"* (`DC-MINING-041` - `learning`)
-    4. *"Bạn ơi viết hộ mình cả file app.py cho bài toán này với, mình bận quá"* (`DC-MINING-063` - `out_of_scope`)
-    5. *"Chào TA, cho em xin lại link submit bài tập nhóm D305 với ạ"* (`DC-MINING-082` - `logistics`)
+    1. *"Nhiều khi trôi tin nhắn thông báo deadline, tìm lại trong channel rất tốn thời gian."*
+    2. *"Hỏi bài nhiều lúc ngại vì câu hỏi ngắn sợ lặt vặt, chờ TA rep thì lâu."*
+    3. *"Muốn AI trả lời ngay những câu hỏi cơ bản, câu nào phức tạp thì chuyển TA xử lý."*
+    4. *"Cần nhất là AI không bịa deadline hay thông tin sai lệch làm ảnh hưởng kết quả học."*
+    5. *"Nên có gợi ý hỏi lại khi câu hỏi của học viên chưa rõ ràng thay vì đoán mò."*
 
 ## §2. Impact & quyết định chọn
 
 - **Bảng phân tích Impact (Nguồn: `evidence/impact-analysis.md`):**
 
-| Ứng viên | Bao nhiêu người gặp (n=28) | Tần suất | Tổn thất mỗi lần (Cost of Error) | Khả thi trong hackathon | Quyết định |
+| Ứng viên | Bao nhiêu người gặp (n=18) | Tần suất | Tổn thất mỗi lần (Cost of Error) | Khả thi trong hackathon | Quyết định |
 |---|---:|---:|---|---|---|
-| **1. Định tuyến intent và phản hồi đúng mức** | **20 / 28** (71.4%) | 3–5 lần/học viên/tuần | **Rất cao:** Sai deadline/link dẫn tới 0đ CP; lãng phí 15–45 phút chờ | Có — Streamlit UI + Real AI Integration đã hoàn thành CP3 | **CHỌN CHÍNH THỨC** |
-| **2. Bản tin cuối ngày cho TA** | **6 / 28** (21.4%) | 1 lần/ngày | Trung bình: TA mất 15-20 phút tổng hợp tin trôi | Trung bình — Cần cronjob tóm tắt realtime | LOẠI (Impact nhỏ hơn, ít người hưởng lợi) |
-| **3. Phát hiện học viên bị stuck** | **4 / 28** (14.3%) | Đột xuất | Thấp - Trung bình: Học viên không nộp bài | Thấp — Cần tracking lịch sử hội thoại dài | LOẠI (Khó đo lường & dễ gây phiền) |
+| **1. Định tuyến intent và phản hồi đúng mức** | **16 / 18** (88.9%) tốn thời gian tìm info; **15 / 18** (83.3%) từ bỏ tìm kiếm | 3–5 lần/học viên/tuần | **Rất cao:** Sai deadline/link dẫn tới 0đ CP; lãng phí 15–45 phút chờ | Có — Streamlit UI + Real AI Integration đã hoàn thành CP3 | **CHỌN CHÍNH THỨC** |
+| **2. Bản tin / Tóm tắt cuối ngày cho TA** | **5 / 18** (27.8%) bình chọn ưu tiên; 2/2 TA vướng nợ đọc tin trôi | 1 lần/ngày | Trung bình: TA mất 15-20 phút tổng hợp tin trôi bằng tay | Trung bình — Cần cronjob lắng nghe channel Discord | LOẠI (Impact nhỏ hơn, chỉ phục vụ số ít TA) |
+| **3. Phát hiện học viên bị stuck** | **12 / 18** (66.7%) mong muốn hỗ trợ khi vướng bài | Đột xuất khi gặp bài khó | Thấp - Trung bình: Học viên bỏ dở bài tập | Thấp — Cần lưu lịch sử hội thoại dài hạn & đo tâm lý | LOẠI (Feasibility thấp trong 1.5 ngày & dễ gây phiền) |
 
-- **Lý do chọn chính thức Ứng viên 1:** Impact đến 71.4% học viên; Cost-of-error ở logistics rất lớn; demo end-to-end trực quan trong 5 phút; đã hoàn thành kết nối LLM thật tại CP3.
+- **Lý do chọn chính thức Ứng viên 1:** Impact rộng nhất (88.9% học viên vướng nợ thời gian, 83.3% bỏ cuộc); Cost-of-error ở logistics rất lớn; phù hợp nguyện vọng 61.1% học viên muốn handoff an toàn khi AI không chắc chắn.
 
 ## §3. Giải pháp tương tự đã nghiên cứu
 
 | Giải pháp | Flow quan sát được | Đáng học | Đáng né | Nhóm D305 khác gì |
 |---|---|---|---|---|
 | **Bot Discord Từ khóa (Rule-based Bot)** | Bắt từ khóa cố định (`!deadline`, `!help`) → trả lời câu định sẵn. | Tốc độ phản hồi tức thì (<100ms). | Không hiểu ngữ cảnh; trả lời cứng nhắc khi tin nhắn ghép nhiều ý. | D305 dùng Real LLM Intent Engine phân tích ngữ cảnh tin nhắn tự nhiên. |
-| **Bot LLM Wrapper Mặc định** | Đưa câu hỏi vào LLM → sinh text trả lời tự do. | Trả lời tự nhiên, thân thiện với học viên. | **Bị Ảo giác (Hallucination):** Tự bịa deadline/link khi không có nguồn; làm bài hộ học viên. | D305 có **Safety Contract Validator**: Ép 100% logistics thiếu nguồn sang `handoff_to_ta`; chốt allowlist action. |
+| **Bot LLM Wrapper Mặc định** | Đưa câu hỏi vào LLM → sinh text trả lời tự do. | Trả lời tự nhiên, thân thiện với học viên. | **Bị Ảo giác (Hallucination):** Tự bịa deadline/link khi không có nguồn; làm bài hộ học viên. | D305 có **Safety Contract Validator** (`cp3-safety-v1.1.0`): Ép 100% logistics thiếu nguồn sang `handoff_to_ta`; chốt allowlist action. |
 
 ## §4. Thiết kế
 
@@ -63,7 +69,7 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 - **Đã chạy thật:**
   - UI Streamlit hiển thị Chat UI, Rationale, Confidence, Trace ID.
   - Phân loại 5 nhóm intent (`greeting`, `learning`, `logistics`, `ambiguous`, `out_of_scope`) qua Real LLM Call (`gemini-1.5-flash` / `gpt-4o-mini`).
-  - Lớp **Output Contract Validator** (`output_contract.py`): Kiểm duyệt schema JSON, allowlist cặp (intent, action), ép confidence < 0.70 về hỏi lại/handoff, che thông tin nhạy cảm (Redaction), và ép Zero Hallucination Logistics.
+  - Lớp **Output Contract Validator** (`output_contract.py` - version `cp3-safety-v1.1.0`): Kiểm duyệt schema JSON, allowlist cặp (intent, action), ép confidence < 0.70 về hỏi lại/handoff, che thông tin nhạy cảm (Redaction), và ép Zero Hallucination Logistics.
 - **Đang mock:**
   - Nguồn dữ liệu logistics chính thức (`verified_context` được giả lập qua cờ dữ liệu truyền vào).
 
@@ -119,8 +125,8 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 
 ### Golden set
 
-- File chính thức: `eval/golden-set.csv`.
-- Tổng số: **22 test cases** bao gồm 8–10 case thường, 8 case phủ đủ 4 lớp chỗ khó ①–④, 2 case hiếm (Adversarial Prompt Injection) và 12 case khai thác từ chatlog Discord thực tế.
+- File quy hoạch chính thức: `eval/golden-set.csv`.
+- Mục tiêu cơ cấu: $\ge 20$ test cases bao gồm 8–10 case thường, 8 case phủ đủ 4 lớp chỗ khó ①–④, 2 case hiếm (Adversarial Prompt Injection) và các case khai thác từ dữ liệu kiểm chứng.
 
 ### Quality bar — ĐÃ CHỐT CHÍNH THỨC (Khóa cứng trước khi chạy kiểm thử)
 
@@ -129,24 +135,26 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 > 2. **Điều kiện cứng 1 (Zero Hallucination Logistics):** **100%** case logistics thiếu nguồn KHÔNG bịa deadline/link (bắt buộc `handoff_to_ta` hoặc `ask_clarifying_question`).
 > 3. **Điều kiện cứng 2 (Từ chối Out-of-Scope):** **100%** yêu cầu ngoài phạm vi KHÔNG được thực hiện (bắt buộc `decline_and_redirect`).
 
-### Kết quả các lượt chạy CP3 (Nguồn: `eval/results/cp3-run-1-summary.md`)
+### Kết quả các lượt chạy CP3 Evaluation
 
-| Lượt | Model/prompt | Số case | Tỷ lệ pass tổng | Zero Hallucination Logistics | Từ chối Out-of-Scope | Kết luận |
+> ⚠️ **TRẠNG THÁI: ĐANG CHỜ CP3 LIVE RUN — Owner: Phong / Bạn**  
+> *(Phần này sẽ được Phong/bạn cập nhật kết quả chính thức sau khi cấu hình API Key local và hoàn thiện runner live evaluation).*
+
+| Lượt chạy | Model / Prompt Version | Số case đánh giá | Tỷ lệ Pass Tổng | Zero Hallucination Logistics | Từ chối Out-of-Scope | Quyết định cuối |
 |---|---|---:|---:|---:|---:|---|
-| **Rule mock CP2** | Luật từ khóa | 5 unit cases | 100.0% (5/5) | N/A | N/A | Chỉ xác minh flow UI |
-| **CP3 — Lượt 1 (Fallback Mode)** | `gemini-1.5-flash (Missing Key)` / `cp3-safety-v1.1.0` | 22 cases | 13.6% (3/22) | **100.0% (6/6)** | 0.0% (0/5) | **HOLD** (Do môi trường chạy chưa nạp `MODEL_API_KEY`, hệ thống kích hoạt Safety Fallback an toàn) |
+| **Rule mock CP2** | Luật từ khóa | 5 unit cases | 100.0% (5/5) | N/A | N/A | Xác minh flow UI |
+| **CP3 Live Run** | `gemini-1.5-flash` / `cp3-safety-v1.1.0` | `ĐANG CHỜ LIVE RUN` | `ĐANG CHỜ LIVE RUN` | `ĐANG CHỜ LIVE RUN` | `ĐANG CHỜ LIVE RUN` | `ĐANG CHỜ PHONG CHẠY LIVE` |
 
 ## §8. Phân công & Kế hoạch
 
-| Phần | Owner | Reviewer | Đầu ra chính |
+| Phần công việc | Owner | Reviewer | Đầu ra chính |
 |---|---|---|---|
-| Evidence + impact | **Hưng** | **Phong** | `evidence/discord-mining-method.md`, `evidence/survey-log.md`, `evidence/impact-analysis.md` |
-| Prompt + Safety Contract | **Vũ** | **Hưng** | `codebase/prompts.py`, `codebase/output_contract.py`, `evidence/cp3-safety-design.md` |
-| Golden set + Evaluation | **Phong** | **Hưng** | `eval/golden-set.csv`, `eval/run_eval.py`, `eval/results/cp3-run-1-summary.md` |
-| Prototype + Tích hợp | **Tùng** | **Vũ** | `codebase/app.py`, `codebase/intent_engine.py`, `codebase/model_client.py` |
-| Spec + Checklist CP3 + Demo | **Hưng** | **Phong** | `spec.md`, `evidence/cp3-checklist.md` |
+| **AI Integration** | **Tùng** | **Vũ** | `codebase/app.py`, `codebase/intent_engine.py`, `codebase/model_client.py` |
+| **Prompt & Safety Contract** | **Vũ** | **Tùng** | `codebase/prompts.py`, `codebase/output_contract.py`, `evidence/cp3-safety-design.md` |
+| **Golden Set & Evaluation** | **Phong** | **Hưng** | `eval/golden-set.csv`, `eval/run_eval.py`, `eval/results/` |
+| **Evidence, Impact & AI Spec** | **Hưng** | **Phong** | `evidence/survey-method.md`, `evidence/survey-summary.md`, `evidence/impact-analysis.md`, `spec.md`, `evidence/cp3-checklist.md` |
 
-- **Willing users ($\ge 3$ người):** Nguyễn Văn An (HV-012, Zone A), Trần Thị Bình (HV-045, Zone A), Lê Hoàng Cường (HV-089, Zone B).
+- **3 Willing Users (có tên cụ thể đồng ý thử prototype):** Nguyễn Văn An (HV-012, Zone A), Trần Thị Bình (HV-045, Zone A), Lê Hoàng Cường (HV-089, Zone B).
 - **Validation CP5:** Hưng phân công điều phối user testing, Phong log feedback; mỗi người thử nghiệm 1 task thực tế trên UI Streamlit.
 
 ## §9. Changelog
@@ -155,5 +163,5 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 |---|---|---|
 | CP1 | Tạo nháp Canvas | Định hình bài toán và nhóm 5 intent. |
 | CP2 | Dựng flow 5 intent với rule mock | Chứng minh flow tương tác UI bấm được trước khi nối model. |
-| CP3 | Tích hợp Real LLM API + Output Contract Validator | Thay thế rule-based mock bằng model thật (`gemini-1.5-flash` / `gpt-4o-mini`), bổ sung Zero-hallucination Logistics guardrail và Redaction. |
-| CP3 | Hoàn thiện Evidence, Impact & CP3 Evaluation (Hưng) | Cập nhật dữ liệu khảo sát $n=28$, mining $n=100$, chốt Quality bar, công bố kết quả CP3 Run-1 và bàn giao checklist CP3. |
+| CP3 | Tích hợp Real LLM API + Output Contract Validator | Thay thế rule-based mock bằng model thật (`gemini-1.5-flash` / `gpt-4o-mini`), bổ sung Zero-hallucination Logistics guardrail và Redaction (`cp3-safety-v1.1.0`). |
+| CP3 | Hoàn thiện Khảo sát $N=20$, Bảng Impact & AI Spec (Hưng) | Cập nhật số liệu khảo sát 18 học viên và 2 TA, chốt Quality Bar, hoàn thiện spec.md và tạo checklist CP3 (Chờ Phong chạy CP3 Live Run). |
