@@ -20,6 +20,13 @@ VALID_ACTIONS: Final[frozenset[str]] = frozenset(
         "decline_and_redirect",
     }
 )
+EXPECTED_ACTIONS_BY_INTENT: Final[dict[str, frozenset[str]]] = {
+    "greeting": frozenset({"answer_briefly"}),
+    "learning": frozenset({"answer_with_guidance"}),
+    "logistics": frozenset({"answer_briefly", "handoff_to_ta"}),
+    "ambiguous": frozenset({"ask_clarifying_question"}),
+    "out_of_scope": frozenset({"decline_and_redirect"}),
+}
 REQUIRED_FIELDS: Final[frozenset[str]] = frozenset(
     {"intent", "confidence", "action", "reply", "rationale"}
 )
@@ -27,17 +34,28 @@ LOW_CONFIDENCE_THRESHOLD: Final[float] = 0.70
 LOW_CONFIDENCE_ACTIONS: Final[frozenset[str]] = frozenset(
     {"ask_clarifying_question", "handoff_to_ta"}
 )
+SAFE_LOGISTICS_REPLY: Final[str] = (
+    "Mình chưa có nguồn chính thức để xác nhận thông tin này. "
+    "Mình sẽ chuyển câu hỏi cho TA hỗ trợ."
+)
 
-_URL_PATTERN = re.compile(r"(?:https?://|www\.|discord\.gg/)\S+", re.IGNORECASE)
-_CONCRETE_LOGISTICS_PATTERN = re.compile(
-    r"(?:"
-    r"\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b|"
-    r"\b\d{4}-\d{2}-\d{2}\b|"
-    r"\b\d{1,2}(?::\d{2})?\s*(?:am|pm|giờ)\b|"
-    r"\b(?:thứ\s*(?:hai|ba|tư|năm|sáu|bảy)|chủ\s*nhật)\b|"
-    r"\b(?:deadline|hạn\s*nộp|lịch\s*học)\s+(?:là|vào|lúc)\b"
-    r")",
+_OPENAI_KEY_PATTERN = re.compile(r"\bsk-[A-Za-z0-9_-]{8,}\b")
+_GOOGLE_KEY_PATTERN = re.compile(r"\bAIza[A-Za-z0-9_-]{12,}\b")
+_BEARER_TOKEN_PATTERN = re.compile(
+    r"\bBearer\s+[A-Za-z0-9._~+/=-]{8,}",
     re.IGNORECASE,
+)
+_DISCORD_TOKEN_PATTERN = re.compile(
+    r"\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}\b"
+)
+_LABELLED_SECRET_PATTERN = re.compile(
+    r"(?P<prefix>\b(?:password|secret|token|api[_ -]?key)\b\s*[:=]\s*)"
+    r"(?P<quote>[\"']?)(?P<value>[^\s,;\"']{4,})(?P=quote)",
+    re.IGNORECASE,
+)
+_LONG_TOKEN_PATTERN = re.compile(
+    r"\b(?=[A-Za-z0-9_-]*[A-Za-z])(?=[A-Za-z0-9_-]*\d)"
+    r"[A-Za-z0-9_-]{48,}\b"
 )
 
 
@@ -55,10 +73,7 @@ def _safe_fallback(reason: str, *, logistics: bool = False) -> ModelOutput:
             "intent": "logistics",
             "confidence": 0.0,
             "action": "handoff_to_ta",
-            "reply": (
-                "Mình chưa có nguồn chính thức để xác nhận thông tin này. "
-                "Mình sẽ chuyển câu hỏi cho TA hỗ trợ."
-            ),
+            "reply": SAFE_LOGISTICS_REPLY,
             "rationale": f"Fallback an toàn: {reason}",
         }
     return {
@@ -73,10 +88,21 @@ def _safe_fallback(reason: str, *, logistics: bool = False) -> ModelOutput:
     }
 
 
-def _looks_like_ungrounded_logistics(reply: str) -> bool:
-    return bool(
-        _URL_PATTERN.search(reply) or _CONCRETE_LOGISTICS_PATTERN.search(reply)
+def redact_sensitive_text(text: str) -> str:
+    """Replace common credentials and suspicious long tokens before display."""
+
+    redacted = _LABELLED_SECRET_PATTERN.sub(
+        lambda match: f"{match.group('prefix')}[REDACTED]", text
     )
+    for pattern in (
+        _OPENAI_KEY_PATTERN,
+        _GOOGLE_KEY_PATTERN,
+        _BEARER_TOKEN_PATTERN,
+        _DISCORD_TOKEN_PATTERN,
+        _LONG_TOKEN_PATTERN,
+    ):
+        redacted = pattern.sub("[REDACTED]", redacted)
+    return redacted
 
 
 def validate_model_output(
@@ -137,22 +163,24 @@ def validate_model_output(
             "rationale phải là chuỗi không rỗng", logistics=is_logistics
         )
 
-    if confidence < LOW_CONFIDENCE_THRESHOLD and action not in LOW_CONFIDENCE_ACTIONS:
+    if is_logistics and not has_verified_logistics_source:
+        # Never retain model-authored logistics text without an approved source.
         return _safe_fallback(
-            "confidence thấp nhưng action không hỏi lại hoặc handoff",
-            logistics=is_logistics,
+            "logistics không có nguồn xác minh luôn dùng handoff cố định",
+            logistics=True,
         )
 
-    if is_logistics and not has_verified_logistics_source:
-        if action != "handoff_to_ta":
+    if confidence < LOW_CONFIDENCE_THRESHOLD:
+        if action not in LOW_CONFIDENCE_ACTIONS:
             return _safe_fallback(
-                "logistics không có nguồn phải chuyển TA", logistics=True
+                "confidence thấp nhưng action không hỏi lại hoặc handoff",
+                logistics=is_logistics,
             )
-        if _looks_like_ungrounded_logistics(reply):
-            return _safe_fallback(
-                "reply logistics chứa deadline, lịch hoặc link chưa có nguồn",
-                logistics=True,
-            )
+    elif action not in EXPECTED_ACTIONS_BY_INTENT[intent]:
+        return _safe_fallback(
+            "cặp intent/action không hợp lệ",
+            logistics=is_logistics,
+        )
 
     return cast(
         ModelOutput,
@@ -160,8 +188,8 @@ def validate_model_output(
             "intent": intent,
             "confidence": float(confidence),
             "action": action,
-            "reply": reply.strip(),
-            "rationale": rationale.strip(),
+            "reply": redact_sensitive_text(reply.strip()),
+            "rationale": redact_sensitive_text(rationale.strip()),
         },
     )
 
