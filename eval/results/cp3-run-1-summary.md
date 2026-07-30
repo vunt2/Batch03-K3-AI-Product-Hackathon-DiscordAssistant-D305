@@ -2,7 +2,7 @@
 
 ## 1. Thông tin Tổng quan
 
-- **Thời điểm đánh giá:** 2026-07-30 15:16:22
+- **Thời điểm đánh giá:** 2026-07-30 15:43:03
 - **Model Engine:** `gemini-1.5-flash (Missing Key)`
 - **Prompt Version:** `cp3-safety-v1.1.0`
 - **Tổng số test cases:** `22`
