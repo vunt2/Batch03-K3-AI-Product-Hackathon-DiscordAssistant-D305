@@ -1,96 +1,71 @@
-# Mini Hackathon AI — Batch 03
+# D305 Assistant
 
-**SPEC → Prototype → Demo.** Đây không phải cuộc thi code — đây là cuộc thi **tư duy sản phẩm AI**.
+D305 Assistant là prototype chatbot hỗ trợ học viên trên Discord tìm câu trả lời nhanh từ nguồn đã được xác minh. Khi không có nguồn phù hợp hoặc độ chắc chắn chưa đủ, hệ thống chuyển câu hỏi sang Labcoach thay vì tự suy đoán thông tin.
 
-- Thời lượng: **1,5 ngày** (một ngày build + một buổi demo)
-- Nhóm: **4-5 người** · zone tối đa 5 nhóm · thi theo lớp
+Labcoach tiếp nhận các câu hỏi trong hàng đợi tập trung, gửi phản hồi lại cho học viên và có thể duyệt tri thức mới qua một quy trình riêng. Phản hồi của Labcoach **không tự động trở thành nguồn chính thức**.
 
-## Bắt đầu từ đâu?
+Prototype hiện sử dụng Streamlit, Gemini, kho tri thức approved dạng JSON và SQLite cục bộ. Đây chưa phải hệ thống production; hoạt động validation tại CP5 vẫn đang được chuẩn bị.
 
-1. Đọc **`01-de-bai.md`** để chọn hướng và hiểu tiêu chí.
-2. Mở **`02-guide.md`** — hướng dẫn từng giai đoạn, đứng ở đâu đọc mục đó.
-3. Viết spec theo **`03-template-ai-spec.md`** — deliverable trung tâm của cả sự kiện.
-4. Đọc **`04-rubric.md`** ngay từ đầu — biết trước bài được chấm theo tiêu chí nào.
+## Thành viên
 
-| File / thư mục | Nội dung |
+| Mã học viên | Họ và tên | Vai trò | Phần phụ trách |
+|---|---|---|---|
+| 2A202601115 | Nguyễn Phúc Hưng | Evidence & Product Specification | Khảo sát, evidence, impact analysis, CP checklist và spec |
+| 2A202601087 | Nguyễn Văn Phong | Evaluation | Golden set, eval runner, kết quả đánh giá và phân tích case fail |
+| 2A202601781 | Nguyễn Hữu Khánh Tùng | AI Integration | Gemini model client, intent engine, Streamlit integration và fallback |
+| 2A202601845 | Nguyễn Tuấn Vũ | Nhóm trưởng · Prompt & Safety | Prompt contract, output validator, safety design và điều phối tích hợp |
+
+## Luồng sản phẩm
+
+1. Learner đặt câu hỏi → hệ thống tìm nguồn approved phù hợp → Gemini phân loại intent và chọn action → trả lời từ nguồn hoặc handoff cho Labcoach.
+2. Labcoach xử lý hàng đợi → phản hồi được gửi lại Learner → câu trả lời ứng viên phải được duyệt riêng trước khi publish vào knowledge base.
+
+Các nguyên tắc cốt lõi:
+
+- Logistics chỉ được trả lời khi có nguồn approved, còn hiệu lực và đúng chủ đề.
+- Không có nguồn hoặc nguồn không chắc chắn thì handoff, không bịa deadline, lịch hay đường dẫn.
+- Câu mơ hồ được hỏi lại; yêu cầu làm hộ được từ chối và định hướng.
+- Mọi output từ model phải qua validator trước khi hiển thị.
+- Phản hồi Labcoach không được tự động coi là tri thức chính thức.
+
+## Chạy prototype
+
+```powershell
+cd codebase
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+streamlit run app.py
+```
+
+Trong `codebase/.env`, chỉ cần điền giá trị cho `GEMINI_API_KEY`. Không commit file `.env` hoặc API key vào Git.
+
+## Cấu trúc repository
+
+| Đường dẫn | Nội dung |
 |---|---|
-| `01-de-bai.md` | Đề bài 3 hướng · 5 tiêu chí nghiệm thu · ràng buộc chung |
-| `02-guide.md` | Hướng dẫn 5 giai đoạn: khám phá → spec → build → đo & validate → demo |
-| `03-template-ai-spec.md` | Template AI Spec (nộp 23:59 ngày 1) |
-| `04-rubric.md` | Rubric 100 điểm (25 nộp checkpoint + 75 chấm bài) + checklist xác minh 6 mốc |
-| `data/` | Dữ liệu thật đã ẩn danh: chatlog VLearn tutor + 6 transcript bài giảng bản sạch — dùng để tìm bằng chứng và xây golden set |
-| `tham-khao/` | JTBD Playbook (PDF) + worksheet JTBD đầy đủ — đọc khi muốn đào sâu |
+| `codebase/` | Ứng dụng Streamlit, tích hợp Gemini, safety routing và kiểm thử |
+| `data/approved/` | Knowledge base đã qua quy trình duyệt |
+| `eval/` | Golden set, eval runner và kết quả các lần đánh giá |
+| `evidence/` | Bằng chứng khảo sát, phân tích impact, checklist và trace đã làm sạch |
+| `validation/` | Sẽ được bổ sung tại CP5; hiện chưa tạo dữ liệu validation giả |
+| `reflection/` | Bản nháp reflection cá nhân của bốn thành viên |
 
-## Lịch — 6 mốc
+## Trạng thái hiện tại
 
-| Mốc | Khoá 3 | Khoá 4 |
-|---|---|---|
-| Khai mạc + phát đề | 09:00 ngày 1 | 14:00 ngày 1 |
-| CP1 · Chốt Canvas | 10:00 ngày 1 | 15:00 ngày 1 |
-| CP2 · Show được thứ bấm được | 12:00 ngày 1 | 17:00 ngày 1 |
-| CP3 · AI chạy thật + đo lượt đầu | 16:00 ngày 1 | 10:30 ngày 2 |
-| CP4 · Chốt tiến độ — spec nộp hạn cứng **23:59 ngày 1** | 17:30 ngày 1 | 12:00 ngày 2 |
-| CP5 · Xác minh + validation + dry run | 09:00 ngày 2 | 14:00 ngày 2 |
-| CP6 · Demo | 10:00 ngày 2 | 15:00 ngày 2 |
+- Prototype Gemini với hai giao diện Learner và Labcoach đã hoạt động.
+- Golden eval lịch sử đạt **20/22** tổng thể.
+- Quality Bar hiện **HOLD** vì nhóm logistics đạt **5/6**, chưa đạt điều kiện cứng.
+- Nhóm đang chuẩn bị CP5 validation với ít nhất 5 người ngoài nhóm.
+- Chưa tuyên bố CP5 hoàn thành hoặc prototype đã sẵn sàng production.
 
-Mỗi mốc cần show gì và được xác minh thế nào: xem bảng trong `04-rubric.md`.
+## Tài liệu dự án và tiêu chí
 
-## Nộp bài
+- [Đề bài](01-de-bai.md)
+- [Hướng dẫn thực hiện](02-guide.md)
+- [Template AI Spec](03-template-ai-spec.md)
+- [Rubric chấm điểm](04-rubric.md)
+- [Product specification](spec.md)
+- [CP3 checklist](evidence/cp3-checklist.md)
+- [Kết quả eval 20/22](eval/results/cp3-gemini-gemini-3.5-flash-lite-20260730-210206-summary.md)
 
-Một repo nhóm, cấu trúc như sau. Spec chốt lúc 23:59 ngày 1; bản hoàn chỉnh trước CP6.
-
-```
-repo/
-├── README.md          ← thành viên (mã HV + tên) + phân công có tên từng phần
-├── spec.md            ← AI Spec theo 03-template-ai-spec.md
-├── demo-slides.pdf    ← slide 6 trang theo 02-guide.md §5.1
-├── codebase/          ← prototype (ghi rõ phần nào mock)
-├── eval/              ← golden set + bảng kết quả các lượt chạy
-├── validation/        ← feedback log từ vòng user test
-└── reflection/        ← mỗi người 1 file
-```
-
-## Chấm điểm
-
-Tổng **100 điểm = 25 điểm nộp checkpoint + 75 điểm chấm bài nộp**. Chi tiết từng ý điểm: `04-rubric.md`.
-
-**25 điểm nộp — mỗi checkpoint 5 điểm (CP1-CP5):** nộp đúng hạn → 5 điểm · nộp muộn → 0 điểm cho mốc đó. Mỗi thành viên nộp riêng, cả nhóm dùng chung một link repo.
-
-**75 điểm chấm — trên artifact trong repo, mỗi con điểm trỏ về một file:**
-
-| Khối | Điểm | Chấm trên file nào |
-|---|---|---|
-| R1 · Bằng chứng & impact | 15 | `spec.md` §1-§2 + log khảo sát/mining |
-| R2 · Lát cắt & thiết kế | 15 | `spec.md` §4 |
-| R3 · Chỗ khó & kịch bản rủi ro | 11 | `spec.md` §5-§6 |
-| R4 · Kiểm thử | 15 | `spec.md` §7 + `eval/` |
-| R5 · Prototype chạy được | 8 | `codebase/` + demo |
-| R6 · Validation với user | 8 | `validation/` |
-| R7 · Quy trình & repo | 3 | cấu trúc repo |
-
-Ba điều nên biết trước khi làm:
-
-- Điểm dựa trên **chuỗi quyết định và bằng chứng**, không dựa trên mức độ hoành tráng của sản phẩm.
-- Kết quả đo **ghi nhận trung thực** — kể cả khi không đạt mục tiêu nhóm tự đặt — vẫn được tính đủ điểm. Số liệu bị chỉnh sửa hoặc che giấu sẽ không được tính.
-- Reflection cá nhân chấm riêng theo rubric của khoá. Điểm vòng demo, chấm chéo trong zone và thưởng thêm (nếu có) theo thể lệ công bố lúc khai mạc.
-
-## Luật chung
-
-1. Prototype có 3 mức **Sketch / Mock / Working** — mức nào cũng bắt buộc **≥1 lời gọi AI chạy thật**.
-2. **Vibe-coding rule:** dùng AI để build thoải mái, nhưng không giải thích được phần có tên mình thì phần đó 0 điểm (kiểm tra tại CP5).
-3. **Quality bar** chốt tại spec.md 23:59 ngày 1 và giữ nguyên sau đó.
-4. Chỉ dùng dữ liệu trong `data/` hoặc dữ liệu giả tự sinh — không dùng dữ liệu thật của người thật. Không commit API key.
-5. Tuân thủ **quy định bảo mật dữ liệu** bên dưới — đây là điều kiện để được cấp data.
-
-## Bảo mật dữ liệu được cung cấp
-
-Dữ liệu trong `data/` là dữ liệu thật của khoá học (đã ẩn danh), cấp riêng cho hackathon này. Khi nhận data, nhóm cam kết:
-
-1. **Chỉ dùng trong phạm vi hackathon** — cho việc tìm bằng chứng, xây golden set và build prototype. Không dùng cho mục đích khác.
-2. **Không chia sẻ ra ngoài khoá học** — không đăng lên mạng xã hội, không gửi cho người ngoài, không đưa vào bất kỳ dataset hay repo công khai nào.
-3. **Không commit data pack vào repo nộp bài** — repo nhóm chỉ chứa trích dẫn ngắn để minh hoạ (vài dòng); golden set trích từ data ghi rõ mã đoạn/mã hội thoại thay vì dán nguyên văn dài.
-4. **Cẩn trọng khi đưa data vào công cụ ngoài** — chỉ đưa phần tối thiểu cần cho việc đang làm; lưu ý API/công cụ free tier có thể dùng dữ liệu để huấn luyện (xem `02-guide.md` §3.4).
-5. **Không cố suy ngược danh tính** từ dữ liệu đã ẩn danh ([học viên], mã U/C/T/M).
-6. Sau sự kiện, **xoá các bản sao data pack** khỏi máy cá nhân và các công cụ đã upload nếu ban tổ chức yêu cầu.
-
-Vi phạm được xử lý theo quy định của khoá và có thể ảnh hưởng trực tiếp đến điểm của nhóm.
+Khi làm việc với repository, thành viên phải giữ nguyên số liệu thật, nêu rõ giới hạn của bằng chứng, không che case fail, không commit secret và không đưa dữ liệu nhạy cảm vào prompt, trace, log hoặc artifact được theo dõi bởi Git.

@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import _bootstrap  # noqa: F401
 
@@ -52,6 +53,11 @@ class KnowledgeBaseTest(unittest.TestCase):
             ("Deadline tạo team là khi nào?", None),
             ("Lớp mình mấy giờ bắt đầu học buổi tiếp theo ạ?", None),
             ("Buổi học tiếp theo bắt đầu lúc nào?", None),
+            (
+                "Chương trình Build Phase diễn ra trong bao lâu?",
+                "KB-LC-34781B3C",
+            ),
+            ("Build Phase kéo dài mấy tuần?", "KB-LC-34781B3C"),
             ("Các hoạt động buổi tối bắt đầu lúc mấy giờ?", "KB-014"),
             ("Buổi tối có hoạt động online không?", "KB-014"),
             ("Mentor Duty diễn ra khi nào?", "KB-030"),
@@ -134,6 +140,95 @@ class KnowledgeBaseTest(unittest.TestCase):
             )
             entries = load_approved_knowledge(path, today=TODAY)
         self.assertEqual(entries, [])
+
+    def test_loader_supports_new_source_ids_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "labcoach-knowledge.json"
+            write_store(
+                path,
+                [
+                    {
+                        "id": "KB-LC-001",
+                        "topic": "logistics",
+                        "canonical_question": "Buổi học labcoach diễn ra ở đâu?",
+                        "question_variants": [],
+                        "answer": "Học online trên Discord.",
+                        "source_ids": ["HO-ABC12345"],
+                        "source_type": "labcoach_reviewed",
+                        "authority": "verified",
+                        "volatile": False,
+                        "valid_until": None,
+                        "status": "approved",
+                        "verified_by": "TA Vũ",
+                        "verified_at": "2026-07-30T10:00:00Z",
+                    }
+                ],
+            )
+            entries = load_approved_knowledge(path, today=TODAY)
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0]["source_ids"], ["HO-ABC12345"])
+
+            match = retrieve_approved_match(
+                "Buổi học labcoach diễn ra ở đâu?", path, today=TODAY
+            )
+            self.assertIsNotNone(match)
+            self.assertEqual(match["knowledge_id"], "KB-LC-001")
+            self.assertEqual(match["source_ids"], ["HO-ABC12345"])
+
+    def test_loader_merges_course_and_labcoach_files_and_deduplicates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            course_path = Path(directory) / "course-knowledge.json"
+            labcoach_path = Path(directory) / "labcoach-knowledge.json"
+
+            write_store(
+                course_path,
+                [
+                    approved_entry(id="KB-001", canonical_question="Hỏi câu 1"),
+                ],
+            )
+            write_store(
+                labcoach_path,
+                [
+                    approved_entry(id="KB-001", canonical_question="Hỏi trùng ID"),
+                    approved_entry(id="KB-LC-002", canonical_question="Hỏi câu 1"),
+                    approved_entry(
+                        id="KB-LC-003",
+                        canonical_question="Hỏi câu 3 duy nhất",
+                        source_image_ids=None,
+                        source_ids=["HO-99999999"],
+                    ),
+                ],
+            )
+
+            with patch("knowledge_base.APPROVED_KNOWLEDGE_PATH", course_path), patch(
+                "knowledge_base.LABCOACH_APPROVED_KNOWLEDGE_PATH", labcoach_path
+            ):
+                entries = load_approved_knowledge(today=TODAY)
+                self.assertEqual(len(entries), 2)
+                ids = {e["id"] for e in entries}
+                self.assertEqual(ids, {"KB-001", "KB-LC-003"})
+
+    def test_explicit_path_loads_single_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custom.json"
+            write_store(path, [approved_entry(id="KB-CUSTOM")])
+            entries = load_approved_knowledge(path, today=TODAY)
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0]["id"], "KB-CUSTOM")
+
+    def test_missing_or_corrupt_labcoach_file_does_not_break_loader(self):
+        with tempfile.TemporaryDirectory() as directory:
+            course_path = Path(directory) / "course-knowledge.json"
+            labcoach_path = Path(directory) / "nonexistent-labcoach.json"
+
+            write_store(course_path, [approved_entry(id="KB-CORE")])
+
+            with patch("knowledge_base.APPROVED_KNOWLEDGE_PATH", course_path), patch(
+                "knowledge_base.LABCOACH_APPROVED_KNOWLEDGE_PATH", labcoach_path
+            ):
+                entries = load_approved_knowledge(today=TODAY)
+                self.assertEqual(len(entries), 1)
+                self.assertEqual(entries[0]["id"], "KB-CORE")
 
 
 if __name__ == "__main__":

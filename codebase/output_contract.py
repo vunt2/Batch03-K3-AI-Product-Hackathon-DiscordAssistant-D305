@@ -55,6 +55,11 @@ _LONG_TOKEN_PATTERN = re.compile(
     r"\b(?=[A-Za-z0-9_-]*[A-Za-z])(?=[A-Za-z0-9_-]*\d)"
     r"[A-Za-z0-9_-]{48,}\b"
 )
+_SELF_DESCRIBING_SECRET_PATTERN = re.compile(
+    r"\b(?:secret|token|api_key|api-key|password)[_-]"
+    r"(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{8,}\b",
+    re.IGNORECASE,
+)
 
 
 class ModelOutput(TypedDict):
@@ -96,12 +101,11 @@ def redact_sensitive_text(text: str) -> str:
         _GOOGLE_KEY_PATTERN,
         _BEARER_TOKEN_PATTERN,
         _DISCORD_TOKEN_PATTERN,
+        _SELF_DESCRIBING_SECRET_PATTERN,
         _LONG_TOKEN_PATTERN,
     ):
         redacted = pattern.sub("[REDACTED]", redacted)
     return redacted
-
-
 def validate_model_output(
     raw_output: str | Mapping[str, object] | None,
     *,

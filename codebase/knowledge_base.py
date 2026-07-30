@@ -14,22 +14,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 APPROVED_KNOWLEDGE_PATH = (
     REPO_ROOT / "data" / "approved" / "course-knowledge.json"
 )
-REQUIRED_ENTRY_FIELDS = {
-    "id",
-    "topic",
-    "canonical_question",
-    "question_variants",
-    "answer",
-    "source_image_ids",
-    "source_type",
-    "authority",
-    "volatile",
-    "valid_until",
-    "status",
-    "verified_by",
-    "verified_at",
-}
-SOURCE_ID_PATTERN = re.compile(r"^IMG-\d{3}$")
+LABCOACH_APPROVED_KNOWLEDGE_PATH = (
+    REPO_ROOT / "data" / "approved" / "labcoach-knowledge.json"
+)
+
+SOURCE_ID_PATTERN = re.compile(r"^(IMG-\d{3}|HO-[A-Za-z0-9]+)$")
 EMAIL_PATTERN = re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
 PHONE_PATTERN = re.compile(r"(?<!\d)(?:\+?84|0)\d{8,10}(?!\d)")
 DISCORD_ID_PATTERN = re.compile(r"(?<!\d)\d{15,20}(?!\d)")
@@ -66,8 +55,11 @@ GENERIC_ROUTING_TERMS = {
     "chung",
     "dau",
     "deadline",
+    "dai",
+    "dien",
     "dong",
     "duoc",
+    "gian",
     "gio",
     "han",
     "hoc",
@@ -75,17 +67,26 @@ GENERIC_ROUTING_TERMS = {
     "lich",
     "lop",
     "luc",
+    "lau",
     "may",
+    "ngay",
     "nao",
     "nop",
     "phai",
+    "phut",
     "report",
     "team",
     "theo",
+    "thang",
     "thong",
     "tin",
     "thoi",
+    "tieng",
     "tiep",
+    "trinh",
+    "tuan",
+    "chuong",
+    "keo",
 }
 KB014_REQUIRED_ANCHORS = (
     "buoi toi",
@@ -101,9 +102,15 @@ KB014_REQUIRED_ANCHORS = (
     "theo tuan",
 )
 PHRASE_ALIASES = (
+    (re.compile(r"\bbuild[\s_-]+phase\b"), " buildphase "),
     (re.compile(r"\b(?:mot nguoi|thanh vien)\b"), " thanhvien "),
     (re.compile(r"\bbao cao tuan\b"), " weekly report "),
     (re.compile(r"\bmentor duty\b"), " mentorduty "),
+)
+BUILD_PHASE_QUERY_SIGNALS = (
+    "buildphase",
+    "giai doan build",
+    "chuong trinh build",
 )
 
 
@@ -151,8 +158,28 @@ def _valid_until_is_current(value: object, today: date) -> bool:
 
 
 def _validate_entry(entry: object, today: date) -> dict[str, Any] | None:
-    if not isinstance(entry, dict) or not REQUIRED_ENTRY_FIELDS.issubset(entry):
+    if not isinstance(entry, dict):
         return None
+    base_fields = {
+        "id",
+        "topic",
+        "canonical_question",
+        "question_variants",
+        "answer",
+        "source_type",
+        "authority",
+        "volatile",
+        "valid_until",
+        "status",
+        "verified_by",
+        "verified_at",
+    }
+    if not base_fields.issubset(entry):
+        return None
+
+    if "source_ids" not in entry and "source_image_ids" not in entry:
+        return None
+
     if entry.get("status") != "approved":
         return None
     if entry.get("authority") != "verified":
@@ -173,15 +200,20 @@ def _validate_entry(entry: object, today: date) -> dict[str, Any] | None:
         return None
     if not isinstance(entry.get("answer"), str) or not entry["answer"].strip():
         return None
-    if not isinstance(entry.get("source_image_ids"), list) or not entry[
-        "source_image_ids"
-    ]:
+
+    # Validate provenance from source_ids or source_image_ids
+    src_ids = entry.get("source_ids")
+    if src_ids is None:
+        src_ids = entry.get("source_image_ids")
+
+    if not isinstance(src_ids, list) or not src_ids:
         return None
     if not all(
         isinstance(value, str) and SOURCE_ID_PATTERN.fullmatch(value)
-        for value in entry["source_image_ids"]
+        for value in src_ids
     ):
         return None
+
     if not isinstance(entry.get("volatile"), bool):
         return None
     if entry["volatile"] and not _valid_until_is_current(
@@ -196,6 +228,7 @@ def _validate_entry(entry: object, today: date) -> dict[str, Any] | None:
         or not entry["verified_at"].strip()
     ):
         return None
+
     public_text = " ".join(
         [
             entry["canonical_question"],
@@ -205,7 +238,29 @@ def _validate_entry(entry: object, today: date) -> dict[str, Any] | None:
     )
     if _contains_pii(public_text):
         return None
-    return dict(entry)
+
+    normalized = dict(entry)
+    normalized["source_ids"] = list(src_ids)
+    if "source_image_ids" in normalized:
+        normalized["source_image_ids"] = list(src_ids)
+    return normalized
+
+
+def _read_json_file(path: Path) -> list[dict[str, Any]]:
+    """Safely read and parse entries list from a JSON file."""
+    try:
+        if not path.exists():
+            return []
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if (
+            isinstance(payload, dict)
+            and payload.get("schema_version") == "1.0"
+            and isinstance(payload.get("entries"), list)
+        ):
+            return payload["entries"]
+    except (OSError, json.JSONDecodeError, UnicodeError):
+        pass
+    return []
 
 
 def load_approved_knowledge(
@@ -213,25 +268,19 @@ def load_approved_knowledge(
     *,
     today: date | None = None,
 ) -> list[dict[str, Any]]:
-    """Load valid approved entries; return an empty list on every schema error."""
-
-    approved_path = Path(path) if path is not None else APPROVED_KNOWLEDGE_PATH
-    try:
-        payload = json.loads(approved_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, UnicodeError):
-        return []
-    if (
-        not isinstance(payload, dict)
-        or payload.get("schema_version") != "1.0"
-        or not isinstance(payload.get("entries"), list)
-    ):
-        return []
+    """Load valid approved entries from course and labcoach knowledge files."""
+    if path is not None:
+        raw_entries = _read_json_file(Path(path))
+    else:
+        course_entries = _read_json_file(APPROVED_KNOWLEDGE_PATH)
+        labcoach_entries = _read_json_file(LABCOACH_APPROVED_KNOWLEDGE_PATH)
+        raw_entries = course_entries + labcoach_entries
 
     current_date = today or datetime.now(timezone.utc).date()
     approved: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
     seen_questions: set[str] = set()
-    for raw_entry in payload["entries"]:
+    for raw_entry in raw_entries:
         entry = _validate_entry(raw_entry, current_date)
         if entry is None:
             continue
@@ -266,12 +315,7 @@ def retrieve_approved_match(
     *,
     today: date | None = None,
 ) -> KnowledgeMatch | None:
-    """Return one confidently matched approved source or ``None``.
-
-    Matching is deterministic. Generic routing words cannot establish a match,
-    and close/tied candidates are rejected instead of being sent to Gemini.
-    """
-
+    """Return one confidently matched approved source or ``None``."""
     question_tokens = _keywords(question)
     if not question_tokens:
         return None
@@ -293,6 +337,14 @@ def retrieve_approved_match(
             ]
         )
         normalized_searchable = _plain_text(searchable)
+        if (
+            "buildphase" in normalized_searchable
+            and not any(
+                signal in normalized_question
+                for signal in BUILD_PHASE_QUERY_SIGNALS
+            )
+        ):
+            continue
         entry_tokens = _keywords(searchable)
         overlap = question_tokens.intersection(entry_tokens)
         anchors = overlap.difference(GENERIC_ROUTING_TERMS)
@@ -331,9 +383,10 @@ def retrieve_approved_match(
     if len(candidates) > 1 and best_score - candidates[1][0] < 1.0:
         return None
 
+    src_ids = best_entry.get("source_ids") or best_entry.get("source_image_ids") or []
     return KnowledgeMatch(
         knowledge_id=best_entry["id"],
-        source_ids=list(best_entry["source_image_ids"]),
+        source_ids=list(src_ids),
         topic=best_entry["topic"],
         source_verified=True,
         answer=best_entry["answer"],
@@ -342,7 +395,6 @@ def retrieve_approved_match(
 
 def knowledge_match_to_context(match: KnowledgeMatch | None) -> str | None:
     """Serialize a structured match as prompt data."""
-
     if match is None:
         return None
     return json.dumps(
@@ -365,7 +417,6 @@ def retrieve_approved_context(
     today: date | None = None,
 ) -> str | None:
     """Compatibility wrapper returning serialized approved context."""
-
     return knowledge_match_to_context(
         retrieve_approved_match(question, path, today=today)
     )

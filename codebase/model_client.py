@@ -13,6 +13,10 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+from conversation_context import (
+    prepare_conversation_history,
+    prepare_current_message,
+)
 from dotenv import load_dotenv
 
 
@@ -149,6 +153,7 @@ def call_gemini_api(
     system_prompt: str,
     user_message: str,
     *,
+    conversation_history: list[dict[str, str]] | None = None,
     config: GeminiConfig | None = None,
     metadata_out: dict[str, object] | None = None,
 ) -> str:
@@ -166,17 +171,37 @@ def call_gemini_api(
 
     model_path = urllib.parse.quote(resolved.model, safe="-._")
     url = f"{resolved.endpoint}/{model_path}:generateContent"
+
+    safe_user_message = prepare_current_message(user_message)
+    safe_history = (
+        prepare_conversation_history(conversation_history)
+        if conversation_history
+        else None
+    )
+
+    contents_payload: list[dict[str, Any]] = []
+    if safe_history:
+        for turn in safe_history:
+            role = "model" if turn.get("role") == "assistant" else "user"
+            contents_payload.append(
+                {
+                    "role": role,
+                    "parts": [{"text": str(turn.get("content", ""))}],
+                }
+            )
+    contents_payload.append(
+        {
+            "role": "user",
+            "parts": [{"text": safe_user_message}],
+        }
+    )
+
     payload: dict[str, Any] = {
         "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": user_message}],
-            }
-        ],
+        "contents": contents_payload,
         "generationConfig": {
             "responseMimeType": "application/json",
-            "temperature": 0.1,
+            "temperature": 0.2,
         },
     }
     request = urllib.request.Request(

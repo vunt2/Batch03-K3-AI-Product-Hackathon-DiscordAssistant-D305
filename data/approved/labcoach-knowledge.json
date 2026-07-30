@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "entries": [
+    {
+      "id": "KB-LC-34781B3C",
+      "topic": "logistics",
+      "canonical_question": "Chương trình Build Phase của tụi mình sẽ diễn ra trong bao lâu",
+      "question_variants": [],
+      "answer": "Chương trình Build Phase của tụi mình sẽ diễn ra trong vòng 6 tuần (dự kiến từ 23/07/2026 đến 01/09/2026) nè! Cụ thể về thời gian của Workshop và Mentoring như sau:\n\nMentoring (Cố vấn):\nCác Mentor sẽ đồng hành cùng team bạn xuyên suốt 6 tuần của chương trình luôn.\nMentoring Duty: Sẽ có 2 buổi cố định vào tối Thứ 4 và Thứ 7 hàng tuần để các Mentor kiểm tra tiến độ, chấm điểm và giải đáp các thắc mắc kỹ thuật cho team.\nNgoài ra, tùy vào tình hình, team có thể được hỗ trợ Mentoring 1-1 trực tiếp từ Mentor hoặc BTC nữa đó.\n\nWorkshop:\nCác buổi Workshop sẽ được tổ chức xen kẽ trong suốt 6 tuần này để cung cấp kiến thức và kỹ năng thực chiến cho các bạn.\nThời lượng mỗi buổi Workshop thường kéo dài khoảng 1.5 - 2 tiếng tùy vào nội dung chia sẻ.\n\nBạn nhớ theo dõi kênh #announcements thường xuyên để không bỏ lỡ lịch trình chi tiết của từng buổi Workshop và các khung giờ Mentoring cụ thể nha! ✨",
+      "source_ids": [
+        "HO-2E814381"
+      ],
+      "source_type": "labcoach_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-09-01",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30T18:22:53.842569+00:00"
+    }
+  ]
+}

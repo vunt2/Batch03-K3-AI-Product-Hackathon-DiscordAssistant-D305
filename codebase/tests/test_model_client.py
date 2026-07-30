@@ -103,9 +103,84 @@ class GeminiClientTest(unittest.TestCase):
             payload["generationConfig"]["responseMimeType"],
             "application/json",
         )
+        self.assertLessEqual(payload["generationConfig"]["temperature"], 0.2)
+        self.assertEqual(payload["generationConfig"]["temperature"], 0.2)
         self.assertIn('"intent": "greeting"', output)
         self.assertEqual(metadata["model_used"], DEFAULT_GEMINI_MODEL)
         self.assertNotIn(GEMINI_KEY, repr(metadata))
+
+    def test_conversation_history_payload_structure(self):
+        env = {
+            "GEMINI_API_KEY": GEMINI_KEY,
+            "GEMINI_MODEL": DEFAULT_GEMINI_MODEL,
+            "GEMINI_TIMEOUT_SECONDS": "30",
+        }
+        history = [
+            {"role": "user", "content": "Hỏi về session_state"},
+            {"role": "assistant", "content": "Session state lưu dữ liệu"},
+        ]
+        with patch.dict(os.environ, env, clear=True):
+            with patch(
+                "model_client.urllib.request.urlopen",
+                return_value=_Response(gemini_response()),
+            ) as urlopen:
+                call_gemini_api(
+                    "system_prompt_text",
+                    "Cho mình ví dụ",
+                    conversation_history=history,
+                )
+        request = urlopen.call_args.args[0]
+        payload = json.loads(request.data.decode("utf-8"))
+        contents = payload["contents"]
+        self.assertEqual(len(contents), 3)
+        self.assertEqual(contents[0]["role"], "user")
+        self.assertEqual(contents[0]["parts"][0]["text"], "Hỏi về session_state")
+        self.assertEqual(contents[1]["role"], "model")
+        self.assertEqual(contents[1]["parts"][0]["text"], "Session state lưu dữ liệu")
+        self.assertEqual(contents[2]["role"], "user")
+        self.assertEqual(contents[2]["parts"][0]["text"], "Cho mình ví dụ")
+        self.assertEqual(payload["system_instruction"]["parts"][0]["text"], "system_prompt_text")
+
+    def test_direct_model_client_call_redacts_secrets_in_user_message_and_history(self):
+        env = {
+            "GEMINI_API_KEY": GEMINI_KEY,
+            "GEMINI_MODEL": DEFAULT_GEMINI_MODEL,
+            "GEMINI_TIMEOUT_SECONDS": "30",
+        }
+        secret_api_key = "AIza" + "D" * 24
+        secret_password = "password=SuperSecret123"
+        secret_bearer = "Bearer Token_Secret_XYZ_99999"
+
+        user_input_msg = f"Tôi lỡ gửi key {secret_api_key} và {secret_password}"
+        history_input = [
+            {"role": "user", "content": f"Trước đó tôi gửi {secret_bearer}"},
+            {"role": "assistant", "content": "Tôi đã ghi nhận."},
+        ]
+
+        with patch.dict(os.environ, env, clear=True):
+            with patch(
+                "model_client.urllib.request.urlopen",
+                return_value=_Response(gemini_response()),
+            ) as urlopen:
+                call_gemini_api(
+                    "system_prompt",
+                    user_input_msg,
+                    conversation_history=history_input,
+                )
+
+        self.assertEqual(urlopen.call_count, 1)
+        request = urlopen.call_args.args[0]
+        request_body = request.data.decode("utf-8")
+
+        # Verify raw secrets are completely absent from network payload
+        self.assertNotIn(secret_api_key, request_body)
+        self.assertNotIn("SuperSecret123", request_body)
+        self.assertNotIn("Token_Secret_XYZ_99999", request_body)
+        self.assertIn("[REDACTED]", request_body)
+
+        # Verify caller input objects were not mutated
+        self.assertIn(secret_api_key, user_input_msg)
+        self.assertIn(secret_bearer, history_input[0]["content"])
 
     def test_timeout_is_sanitized(self):
         env = {"GEMINI_API_KEY": GEMINI_KEY}

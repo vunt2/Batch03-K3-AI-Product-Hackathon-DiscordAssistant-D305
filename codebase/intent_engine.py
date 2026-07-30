@@ -6,6 +6,10 @@ import re
 import uuid
 from typing import TypedDict
 
+from conversation_context import (
+    prepare_conversation_history,
+    prepare_current_message,
+)
 from knowledge_base import (
     KnowledgeMatch,
     knowledge_match_to_context,
@@ -72,7 +76,12 @@ HOMEWORK_PATTERN = re.compile(
 )
 
 
-def classify_message(message: str, *, use_mock: bool = False) -> IntentResult:
+def classify_message(
+    message: str,
+    *,
+    conversation_history: list[dict[str, str]] | None = None,
+    use_mock: bool = False,
+) -> IntentResult:
     """Route one learner message and return UI-safe structured metadata."""
 
     trace_id = f"trace-{uuid.uuid4().hex[:8]}"
@@ -105,11 +114,18 @@ def classify_message(message: str, *, use_mock: bool = False) -> IntentResult:
             error_type="missing_api_key" if not config.is_configured else "",
         )
 
+    safe_history = (
+        prepare_conversation_history(conversation_history)
+        if conversation_history
+        else None
+    )
+    safe_model_message = prepare_current_message(clean_message)
     verified_context = knowledge_match_to_context(knowledge_match)
     try:
         raw_output = call_gemini_api(
             build_system_prompt(verified_context),
-            clean_message,
+            safe_model_message,
+            conversation_history=safe_history,
             config=config,
             metadata_out=metadata,
         )

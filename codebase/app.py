@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 import html
 from pathlib import Path
 
 import streamlit as st
+import os
+import uuid
+
 from dotenv import load_dotenv
 
 
@@ -14,16 +17,57 @@ CODEBASE_DIR = Path(__file__).resolve().parent
 ENV_PATH = CODEBASE_DIR / ".env"
 load_dotenv(ENV_PATH, override=ENV_PATH.exists())
 
-from handoff_queue import (  # noqa: E402
+
+def load_runtime_secrets() -> None:
+    """Load runtime configuration from Streamlit secrets into os.environ if not set."""
+    try:
+        if not hasattr(st, "secrets"):
+            return
+        secret_keys = (
+            "GEMINI_API_KEY",
+            "GEMINI_MODEL",
+            "GEMINI_TIMEOUT_SECONDS",
+            "ASSISTANT_DB_PATH",
+        )
+        for key in secret_keys:
+            if key not in os.environ and key in st.secrets:
+                val = str(st.secrets[key])
+                if val and str(val).strip():
+                    os.environ[key] = str(val).strip()
+    except Exception:
+        pass
+
+
+load_runtime_secrets()
+
+from handoff_store import (  # noqa: E402
+    APPROVED_FOR_PUBLISH,
     PENDING,
+    PENDING_REVIEW,
+    PUBLISHED,
+    REJECTED,
     RESOLVED,
-    enqueue_handoff,
-    queue_counts,
-    reopen_handoff,
-    resolve_handoff,
+    StoreError,
+    count_handoffs,
+    count_knowledge_candidates,
+    create_handoff,
+    delete_session_handoffs,
+    get_knowledge_candidate_for_handoff,
+    initialize_store,
+    list_handoffs,
+    list_knowledge_candidates,
+    list_session_handoffs,
+    reopen_handoff as store_reopen_handoff,
+    resolve_handoff as store_resolve_handoff,
+    review_knowledge_candidate,
 )
+from insight_service import build_daily_digest  # noqa: E402
 from intent_engine import IntentResult, classify_message  # noqa: E402
 from knowledge_base import load_approved_knowledge  # noqa: E402
+from knowledge_publisher import (  # noqa: E402
+    KnowledgePublishError,
+    publish_candidate,
+)
 from model_client import get_gemini_status  # noqa: E402
 
 
@@ -283,10 +327,41 @@ SAMPLE_MESSAGES = (
 
 def initialize_state() -> None:
     st.session_state.setdefault("messages", [dict(WELCOME_MESSAGE)])
-    st.session_state.setdefault("handoff_queue", [])
+    st.session_state.setdefault(
+        "learner_session_id", f"session-{uuid.uuid4().hex[:12]}"
+    )
     st.session_state.setdefault("navigation", "Learner")
     st.session_state.setdefault("queue_filter", "Đang chờ")
     st.session_state.setdefault("flash_message", "")
+    st.session_state.setdefault("reset_confirmed", False)
+    st.session_state.setdefault("reset_notice", False)
+    st.session_state.setdefault("reset_error", "")
+    st.session_state.setdefault("storage_available", True)
+    st.session_state.setdefault("storage_error_message", "")
+
+    try:
+        initialize_store()
+        st.session_state.storage_available = True
+        st.session_state.storage_error_message = ""
+    except StoreError as error:
+        st.session_state.storage_available = False
+        st.session_state.storage_error_message = str(error)
+
+
+def reset_demo_session() -> None:
+    try:
+        delete_session_handoffs(st.session_state.learner_session_id)
+        st.session_state.messages = [dict(WELCOME_MESSAGE)]
+        st.session_state.flash_message = ""
+        st.session_state.reset_confirmed = False
+        st.session_state.reset_notice = True
+        st.session_state.reset_error = ""
+    except StoreError as error:
+        st.session_state.reset_confirmed = False
+        st.session_state.reset_notice = False
+        st.session_state.reset_error = (
+            "Không thể xóa dữ liệu phiên do kho lưu trữ tạm thời chưa sẵn sàng."
+        )
 
 
 def submit_message(message: str) -> None:
@@ -294,12 +369,15 @@ def submit_message(message: str) -> None:
     if not clean_message:
         return
 
+    history = list(st.session_state.messages)
     st.session_state.messages.append(
         {"role": "user", "content": clean_message, "result": None}
     )
     try:
         with st.spinner("Gemini đang kiểm tra ý định và nguồn phù hợp…"):
-            result = classify_message(clean_message)
+            result = classify_message(
+                clean_message, conversation_history=history
+            )
     except Exception:
         result = {
             "intent": "ambiguous",
@@ -328,14 +406,25 @@ def submit_message(message: str) -> None:
 
     handoff_id = None
     if result["action"] == "handoff_to_ta":
-        handoff_id = enqueue_handoff(
-            st.session_state.handoff_queue,
-            question=clean_message,
-            intent=result["intent"],
-            reason=result["rationale"],
-            trace_id=result["trace_id"],
-            model=result["model_used"],
-        )
+        try:
+            record = create_handoff(
+                question=clean_message,
+                intent=result["intent"],
+                reason=result["rationale"],
+                trace_id=result["trace_id"],
+                model=result["model_used"],
+                learner_session_id=st.session_state.learner_session_id,
+            )
+            handoff_id = record["handoff_id"]
+        except StoreError as error:
+            st.session_state.storage_available = False
+            st.session_state.storage_error_message = str(error)
+            result["reply"] = (
+                "Mình chưa thể lưu yêu cầu cho Labcoach do kho dữ liệu tạm thời "
+                "chưa sẵn sàng. Bạn vui lòng thử lại sau."
+            )
+            handoff_id = None
+
     st.session_state.messages.append(
         {
             "role": "assistant",
@@ -386,6 +475,7 @@ def render_decision(result: IntentResult) -> None:
 
 
 def render_learner_view() -> None:
+    _sync_labcoach_response(st.session_state.learner_session_id)
     st.markdown(
         '<div class="product-mark">Learner workspace</div>',
         unsafe_allow_html=True,
@@ -452,19 +542,58 @@ def _format_timestamp(value: str | None) -> str:
         return value
 
 
-def _sync_labcoach_response(
-    handoff_id: str,
-    response: str,
-    resolved_at: str | None,
-) -> None:
+def _sync_labcoach_response(learner_session_id: str) -> None:
+    try:
+        session_handoffs = list_session_handoffs(learner_session_id)
+    except StoreError:
+        return
+    records_by_id = {h["handoff_id"]: h for h in session_handoffs}
     for message in st.session_state.messages:
-        if message.get("handoff_id") == handoff_id:
-            message["labcoach_response"] = response
-            message["resolved_at"] = resolved_at
+        h_id = message.get("handoff_id")
+        if h_id and h_id in records_by_id:
+            rec = records_by_id[h_id]
+            if rec["status"] == RESOLVED:
+                message["labcoach_response"] = rec["labcoach_response"]
+                message["resolved_at"] = rec["resolved_at"]
+
+
+def execute_candidate_publish(
+    candidate_id: str,
+    topic: str,
+    volatile: bool,
+    valid_until: str | None,
+) -> tuple[bool, str]:
+    """Execute candidate publish safely via backend publisher."""
+    try:
+        entry = publish_candidate(
+            candidate_id=candidate_id,
+            topic=topic,
+            volatile=volatile,
+            valid_until=valid_until,
+        )
+        k_id = entry.get("id", "")
+        return True, f"Đã publish knowledge {k_id}."
+    except KnowledgePublishError:
+        return (
+            False,
+            "Không thể publish knowledge. Vui lòng kiểm tra trạng thái "
+            "candidate và thông tin đã nhập.",
+        )
 
 
 def render_labcoach_view() -> None:
-    pending_count, resolved_count = queue_counts(st.session_state.handoff_queue)
+    st.warning(
+        "Labcoach View hiện chưa có xác thực. Không triển khai công khai với dữ liệu thật."
+    )
+    try:
+        pending_count, resolved_count = count_handoffs()
+        cand_p_count, cand_a_count, cand_r_count = count_knowledge_candidates()
+        published_candidates = list_knowledge_candidates(PUBLISHED)
+        cand_pub_count = len(published_candidates)
+    except StoreError:
+        st.error("Không thể lấy dữ liệu thống kê từ kho lưu trữ.")
+        return
+
     st.markdown(
         '<div class="product-mark">Labcoach workspace</div>',
         unsafe_allow_html=True,
@@ -474,17 +603,261 @@ def render_labcoach_view() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="hero-copy">Xử lý tập trung các câu bot chưa có đủ căn cứ. Phản hồi chỉ tồn tại trong phiên demo và không tự động trở thành knowledge chính thức.</div>',
+        '<div class="hero-copy">Xử lý tập trung các câu bot chưa có đủ căn cứ. Câu hỏi và phản hồi được lưu trong persistent queue; phản hồi Labcoach không tự động trở thành knowledge chính thức.</div>',
         unsafe_allow_html=True,
     )
 
-    metric_columns = st.columns(2)
-    metric_columns[0].metric("Đang chờ", pending_count)
-    metric_columns[1].metric("Đã xử lý", resolved_count)
+    metric_columns = st.columns(6)
+    metric_columns[0].metric("Handoff chờ", pending_count)
+    metric_columns[1].metric("Handoff xong", resolved_count)
+    metric_columns[2].metric("Chờ duyệt", cand_p_count)
+    metric_columns[3].metric("Sẵn sàng publish", cand_a_count)
+    metric_columns[4].metric("Đã từ chối", cand_r_count)
+    metric_columns[5].metric("Đã publish", cand_pub_count)
 
     if st.session_state.flash_message:
         st.success(st.session_state.flash_message)
         st.session_state.flash_message = ""
+
+    st.markdown("### ✦ Knowledge chờ duyệt")
+    try:
+        pending_candidates = list_knowledge_candidates(PENDING_REVIEW)
+    except StoreError:
+        st.error("Không thể tải danh sách candidate từ kho lưu trữ.")
+        pending_candidates = []
+
+    if not pending_candidates:
+        st.caption("Chưa có candidate nào đang chờ duyệt.")
+    else:
+        for cand in pending_candidates:
+            c_id = cand["candidate_id"]
+            with st.container(border=True):
+                st.markdown(
+                    f"""
+                    <div class="status-row">
+                      <span class="pill pill-warn">Chờ duyệt</span>
+                      <span class="pill pill-brand">{html.escape(cand["intent"])}</span>
+                      <span class="pill">{html.escape(c_id)}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                edited_q = st.text_area(
+                    "Câu hỏi (có thể chỉnh sửa)",
+                    value=cand["question"],
+                    key=f"cand-q-{c_id}",
+                )
+                edited_a = st.text_area(
+                    "Câu trả lời (có thể chỉnh sửa)",
+                    value=cand["answer"],
+                    key=f"cand-a-{c_id}",
+                )
+                st.caption(
+                    f"Nguồn: `{cand['source_type']}` · Handoff: `{cand['handoff_id']}`"
+                )
+                rev_cols = st.columns(2)
+                with rev_cols[0]:
+                    reviewer = st.text_input(
+                        "Người duyệt (bắt buộc)",
+                        key=f"cand-rev-{c_id}",
+                        placeholder="Họ tên hoặc ID người duyệt…",
+                    )
+                with rev_cols[1]:
+                    review_note = st.text_input(
+                        "Ghi chú review (không bắt buộc)",
+                        key=f"cand-note-{c_id}",
+                        placeholder="Ghi chú thêm nếu có…",
+                    )
+                btn_cols = st.columns(2)
+                with btn_cols[0]:
+                    if st.button(
+                        "Duyệt để chờ publish",
+                        key=f"cand-app-{c_id}",
+                        type="primary",
+                        use_container_width=True,
+                    ):
+                        if not reviewer.strip():
+                            st.warning("Vui lòng nhập tên/ID Người duyệt.")
+                        elif not edited_q.strip() or not edited_a.strip():
+                            st.warning("Câu hỏi và câu trả lời không được để trống.")
+                        else:
+                            try:
+                                if review_knowledge_candidate(
+                                    c_id,
+                                    APPROVED_FOR_PUBLISH,
+                                    edited_q,
+                                    edited_a,
+                                    reviewer,
+                                    review_note,
+                                ):
+                                    st.session_state.flash_message = (
+                                        f"Đã duyệt candidate {c_id} (chờ publish)."
+                                    )
+                                    st.rerun()
+                                else:
+                                    st.error("Không thể duyệt candidate này.")
+                            except StoreError:
+                                st.error("Lỗi kho lưu trữ khi duyệt candidate.")
+                with btn_cols[1]:
+                    if st.button(
+                        "Từ chối",
+                        key=f"cand-rej-{c_id}",
+                        use_container_width=True,
+                    ):
+                        if not reviewer.strip():
+                            st.warning("Vui lòng nhập tên/ID Người duyệt.")
+                        elif not edited_q.strip() or not edited_a.strip():
+                            st.warning("Câu hỏi và câu trả lời không được để trống.")
+                        else:
+                            try:
+                                if review_knowledge_candidate(
+                                    c_id,
+                                    REJECTED,
+                                    edited_q,
+                                    edited_a,
+                                    reviewer,
+                                    review_note,
+                                ):
+                                    st.session_state.flash_message = (
+                                        f"Đã từ chối candidate {c_id}."
+                                    )
+                                    st.rerun()
+                                else:
+                                    st.error("Không thể từ chối candidate này.")
+                            except StoreError:
+                                st.error("Lỗi kho lưu trữ khi từ chối candidate.")
+
+    st.divider()
+    st.markdown("### ✦ Knowledge sẵn sàng publish")
+    try:
+        approved_candidates = list_knowledge_candidates(APPROVED_FOR_PUBLISH)
+    except StoreError:
+        st.error("Không thể tải danh sách candidate sẵn sàng publish.")
+        approved_candidates = []
+
+    if not approved_candidates:
+        st.caption("Chưa có candidate nào ở trạng thái sẵn sàng publish.")
+    else:
+        for cand in approved_candidates:
+            c_id = cand["candidate_id"]
+            with st.container(border=True):
+                st.markdown(
+                    f"""
+                    <div class="status-row">
+                      <span class="pill pill-brand">Sẵn sàng publish</span>
+                      <span class="pill">{html.escape(cand["intent"])}</span>
+                      <span class="pill">{html.escape(c_id)}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                st.text_input(
+                    "Câu hỏi (đã duyệt)",
+                    value=cand["question"],
+                    disabled=True,
+                    key=f"pub-q-{c_id}",
+                )
+                st.text_area(
+                    "Câu trả lời (đã duyệt)",
+                    value=cand["answer"],
+                    disabled=True,
+                    key=f"pub-a-{c_id}",
+                )
+                st.caption(
+                    f"Người duyệt: `{cand['reviewed_by']}` · Thời gian: `{cand['reviewed_at']}`"
+                )
+                pub_topic = st.text_input(
+                    "Topic",
+                    value=cand["intent"],
+                    key=f"pub-topic-{c_id}",
+                )
+                is_volatile = st.checkbox(
+                    "Thông tin có thời hạn",
+                    key=f"pub-vol-{c_id}",
+                )
+                if is_volatile:
+                    valid_date = st.date_input(
+                        "Có hiệu lực đến",
+                        value=datetime.now(timezone.utc).date(),
+                        key=f"pub-date-{c_id}",
+                    )
+                    valid_until_str = valid_date.strftime("%Y-%m-%d")
+                else:
+                    valid_until_str = None
+
+                if st.button(
+                    "Publish knowledge",
+                    key=f"pub-btn-{c_id}",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    clean_topic = pub_topic.strip()
+                    if not clean_topic:
+                        st.warning("Vui lòng nhập Topic.")
+                    else:
+                        success, msg = execute_candidate_publish(
+                            c_id, clean_topic, is_volatile, valid_until_str
+                        )
+                        if success:
+                            st.session_state.flash_message = msg
+                            st.rerun()
+                        else:
+                            st.error(msg)
+
+    st.caption(f"Đã publish: {cand_pub_count} knowledge từ phản hồi Labcoach.")
+
+    st.divider()
+    st.markdown("### ✦ Tổng hợp cuối ngày")
+    bangkok_today = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=7))).date()
+    selected_digest_date = st.date_input(
+        "Chọn ngày xem tổng hợp",
+        value=bangkok_today,
+        key="digest_date_picker",
+    )
+
+    try:
+        all_handoffs_for_digest = list_handoffs(None)
+        digest = build_daily_digest(all_handoffs_for_digest, selected_digest_date)
+    except StoreError:
+        st.error("Không thể lấy dữ liệu handoff để lập bản tổng hợp.")
+        digest = None
+
+    if digest is not None:
+        digest_cols = st.columns(4)
+        digest_cols[0].metric("Tổng câu hỏi", digest["total_questions"])
+        digest_cols[1].metric("Chưa xử lý", digest["pending_count"])
+        digest_cols[2].metric("Đã xử lý", digest["resolved_count"])
+        digest_cols[3].metric("Nhóm câu lặp", digest["repeated_cluster_count"])
+
+        if digest["repeated_clusters"]:
+            st.markdown("#### các nhóm câu hỏi lặp trùng:")
+            for cluster in digest["repeated_clusters"]:
+                with st.expander(
+                    f"[{cluster['cluster_id']}] {cluster['representative_question']} ({cluster['count']} lượt)"
+                ):
+                    st.write(
+                        f"**Chờ xử lý:** {cluster['pending_count']} · **Đã xử lý:** {cluster['resolved_count']}"
+                    )
+                    st.write(f"**Intents:** {', '.join(cluster['intents'])}")
+                    st.write("**Danh sách câu hỏi trong nhóm:**")
+                    for q in cluster["questions"]:
+                        st.markdown(f"- {html.escape(q)}")
+        else:
+            st.caption("Không có nhóm câu hỏi lặp trong ngày đã chọn.")
+
+        with st.expander("Xem trước bản tổng hợp Markdown"):
+            st.markdown(digest["markdown"])
+
+        st.download_button(
+            label="Tải bản tổng hợp Markdown",
+            data=digest["markdown"],
+            file_name=f"labcoach-digest-{digest['selected_date']}.md",
+            mime="text/markdown",
+            key=f"download-digest-{digest['selected_date']}",
+        )
+
+    st.divider()
+    st.markdown("### ✦ Hàng chờ Handoff")
 
     st.radio(
         "Lọc câu hỏi",
@@ -497,11 +870,12 @@ def render_labcoach_view() -> None:
         "Đã xử lý": RESOLVED,
         "Tất cả": None,
     }[st.session_state.queue_filter]
-    visible_items = [
-        item
-        for item in reversed(st.session_state.handoff_queue)
-        if filter_status is None or item["status"] == filter_status
-    ]
+
+    try:
+        visible_items = list_handoffs(filter_status)
+    except StoreError:
+        st.error("Không thể tải danh sách câu hỏi từ kho lưu trữ.")
+        return
 
     if not visible_items:
         st.markdown(
@@ -558,49 +932,78 @@ def render_labcoach_view() -> None:
                 ):
                     if not response.strip():
                         st.warning("Vui lòng nhập phản hồi trước khi xử lý.")
-                    elif resolve_handoff(
-                        st.session_state.handoff_queue,
-                        item["handoff_id"],
-                        response,
-                    ):
-                        _sync_labcoach_response(
-                            item["handoff_id"],
-                            response.strip(),
-                            item["resolved_at"],
-                        )
-                        st.session_state.flash_message = (
-                            "Đã gửi phản hồi cho Learner và đánh dấu câu hỏi đã xử lý."
-                        )
-                        st.rerun()
+                    else:
+                        try:
+                            if store_resolve_handoff(
+                                item["handoff_id"],
+                                response,
+                            ):
+                                _sync_labcoach_response(
+                                    st.session_state.learner_session_id
+                                )
+                                st.session_state.flash_message = (
+                                    "Đã gửi phản hồi cho Learner và lưu thành candidate chờ team duyệt."
+                                )
+                                st.rerun()
+                            else:
+                                st.error("Không thể đánh dấu xử lý câu hỏi này.")
+                        except StoreError:
+                            st.error("Lỗi kho lưu trữ: Không thể gửi phản hồi lúc này.")
             else:
                 st.markdown("**Phản hồi đã gửi**")
                 st.info(item["labcoach_response"])
                 st.caption(
                     f"Xử lý lúc {_format_timestamp(item['resolved_at'])}"
                 )
+                try:
+                    cand = get_knowledge_candidate_for_handoff(
+                        item["handoff_id"]
+                    )
+                    if cand:
+                        st.caption("Knowledge candidate: Chờ team duyệt")
+                except StoreError:
+                    pass
                 if st.button(
                     "Mở lại câu hỏi",
                     key=f"reopen-{item['handoff_id']}",
                     use_container_width=True,
                 ):
-                    reopen_handoff(
-                        st.session_state.handoff_queue,
-                        item["handoff_id"],
-                    )
-                    st.session_state.flash_message = (
-                        "Đã mở lại câu hỏi trong hàng chờ."
-                    )
-                    st.rerun()
+                    try:
+                        if store_reopen_handoff(item["handoff_id"]):
+                            st.session_state.flash_message = (
+                                "Đã mở lại câu hỏi trong hàng chờ."
+                            )
+                            st.rerun()
+                        else:
+                            st.error("Không thể mở lại câu hỏi này.")
+                    except StoreError:
+                        st.error("Lỗi kho lưu trữ: Không thể mở lại câu hỏi lúc này.")
 
 
 def render_sidebar() -> None:
+    if st.session_state.get("reset_notice", False):
+        st.toast("Đã xóa dữ liệu phiên demo.")
+        st.session_state.reset_notice = False
+
+    if st.session_state.get("reset_error", ""):
+        st.sidebar.error(st.session_state.reset_error)
+        st.session_state.reset_error = ""
+
+    if not st.session_state.get("storage_available", True):
+        st.sidebar.warning("Kho lưu trữ handoff tạm thời chưa sẵn sàng.")
+
     gemini_status = get_gemini_status()
     knowledge_count = len(load_approved_knowledge())
-    pending_count, _ = queue_counts(st.session_state.handoff_queue)
+    pending_count = 0
+    try:
+        pending_count, _ = count_handoffs()
+    except StoreError:
+        pass
 
     with st.sidebar:
         st.markdown("## ✦ D305 Assistant")
         st.caption("Learner support · Gemini")
+        st.caption("Demo có kiểm soát · Chưa tích hợp đăng nhập hoặc Discord thật.")
         st.radio(
             "Không gian làm việc",
             ("Learner", "Labcoach"),
@@ -630,22 +1033,22 @@ def render_sidebar() -> None:
             "Tôi xác nhận xóa hội thoại và queue",
             key="reset_confirmed",
         )
-        if st.button(
+        st.button(
             "Xóa dữ liệu phiên",
             disabled=not confirmed,
+            on_click=reset_demo_session,
             use_container_width=True,
-        ):
-            st.session_state.messages = [dict(WELCOME_MESSAGE)]
-            st.session_state.handoff_queue = []
-            st.session_state.flash_message = ""
-            st.session_state.reset_confirmed = False
-            st.toast("Đã xóa dữ liệu phiên demo.")
-            st.rerun()
+        )
 
 
-initialize_state()
-render_sidebar()
-if st.session_state.navigation == "Learner":
-    render_learner_view()
-else:
-    render_labcoach_view()
+def main() -> None:
+    initialize_state()
+    render_sidebar()
+    if st.session_state.navigation == "Learner":
+        render_learner_view()
+    else:
+        render_labcoach_view()
+
+
+if __name__ == "__main__":
+    main()

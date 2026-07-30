@@ -3,7 +3,7 @@ import unittest
 
 import _bootstrap  # noqa: F401
 
-from output_contract import SAFE_LOGISTICS_REPLY, validate_model_output
+from output_contract import SAFE_LOGISTICS_REPLY, redact_sensitive_text, validate_model_output
 from prompts import PROMPT_VERSION, build_system_prompt
 
 
@@ -211,6 +211,34 @@ class OutputContractTest(unittest.TestCase):
             json.loads(encoded_context)["verified_context"],
             adversarial_context,
         )
+
+    def test_self_describing_secret_tokens_redaction(self):
+        should_redact = (
+            "secret_token_1234567890_abc",
+            "api_key_example123456",
+            "api-key-example123456",
+            "password_value123456",
+            "token_demo123456789",
+        )
+        for token in should_redact:
+            with self.subTest(token=token):
+                res = redact_sensitive_text(f"Token bí mật: {token} trong câu.")
+                self.assertNotIn(token, res)
+                self.assertIn("[REDACTED]", res)
+                self.assertTrue(res.startswith("Token bí mật: "))
+                self.assertTrue(res.endswith(" trong câu."))
+
+        should_not_redact = (
+            "token_budget",
+            "password_policy",
+            "secret_name",
+            "api_key_description",
+        )
+        for text in should_not_redact:
+            with self.subTest(text=text):
+                res = redact_sensitive_text(f"Cụm từ {text} bình thường.")
+                self.assertNotIn("[REDACTED]", res)
+                self.assertEqual(res, f"Cụm từ {text} bình thường.")
 
 
 if __name__ == "__main__":

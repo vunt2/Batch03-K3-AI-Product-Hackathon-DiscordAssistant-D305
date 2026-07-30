@@ -7,3 +7,6 @@ __pycache__/
 Khảo sát AI Agent hỗ trợ học tập trên Discord (Câu trả lời) - Câu trả lời biểu mẫu 1.csv
 data/raw/
 data/**/local-file-map.csv
+data/runtime/*.db
+data/runtime/*.db-shm
+data/runtime/*.db-wal
