@@ -10,55 +10,22 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 
 ## §1. User & Job
 
-- **Job executor:** Học viên đang hỏi bài hoặc hỏi thông tin vận hành trong
-  Discord của khóa học.
-- **Workflow hiện tại:** Học viên đăng câu hỏi → chờ TA/giảng viên hoặc thành
-  viên khác đọc → người trả lời tự xác định loại câu hỏi → trả lời hoặc chuyển
-  đúng người.
-- **Core JTBD:** Nhận được hướng xử lý phù hợp cho câu hỏi trong lúc học để có
-  thể tiếp tục công việc mà không phải chờ hoặc làm theo thông tin thiếu căn cứ.
-- **Problem statement (không dùng chữ AI):** Khi học viên đăng câu hỏi trong
-  Discord, nội dung ngắn, mơ hồ hoặc thuộc nhiều loại khác nhau khiến việc phản
-  hồi dễ sai mức; đặc biệt, trả lời sai deadline hoặc link nộp bài có thể làm học
-  viên nộp muộn hoặc nộp sai nơi.
+- **Job executor:** Học viên đang hỏi bài hoặc hỏi thông tin vận hành trong Discord của khóa học.
+- **Workflow hiện tại:** Học viên đăng câu hỏi → chờ TA/giảng viên hoặc thành viên khác đọc → người trả lời tự xác định loại câu hỏi → trả lời hoặc chuyển đúng người.
+- **Core JTBD:** Nhận được hướng xử lý phù hợp cho câu hỏi trong lúc học để có thể tiếp tục công việc mà không phải chờ hoặc làm theo thông tin thiếu căn cứ.
+- **Problem statement (không dùng chữ AI):** Khi học viên đăng câu hỏi trong Discord, nội dung ngắn, mơ hồ hoặc thuộc nhiều loại khác nhau khiến việc phản hồi dễ sai mức; đặc biệt, trả lời sai deadline hoặc link nộp bài có thể làm học viên nộp muộn hoặc nộp sai nơi.
 - **Evidence khảo sát — `UNVERIFIED` theo chuẩn A:**
-  - Khảo sát ngày 30/07/2026 có 20 response: 18 learner và 2 TA/Lab Coach.
-    Log response-level đã được ẩn danh bằng mã R001–R020; câu hỏi, codebook,
-    metrics và phương pháp audit nằm trong
-    [`evidence/survey/`](evidence/survey/).
-  - `pain_confirmed_draft = 10/18 learner (55,6%)`
-    (`metric_id=L_PAIN_CONFIRMED_DRAFT`). Learner được tính là xác nhận nếu:
-    Q05 có “Câu hỏi không được trả lời”, hoặc Q05 có “Có quá nhiều câu hỏi
-    trùng lặp”, hoặc Q07 normalized ≥4. Đây vẫn là tiêu chí draft, chưa được
-    team duyệt và không được đổi sau khi thấy kết quả.
-  - Eligibility ngoài team vẫn `UNVERIFIED`. Nếu rubric tính cả learner và TA,
-    tổng n có thể là 20 nhưng vẫn phải xác minh cả 20 người ngoài nhóm. Nếu
-    learner là target respondent chính, hiện chỉ có n=18 learner và cần thu thêm
-    ít nhất hai learner ngoài nhóm. Team/TA phải xác nhận cách hiểu; spec không
-    tự chọn cách có lợi hơn.
-  - TA findings chỉ là **directional only, n=2**, không được khái quát hóa.
-  - Hạn chế: dữ liệu self-reported; câu hỏi khảo sát nhắc trực tiếp đến AI; mẫu
-    TA nhỏ; chưa xác minh respondent ngoài team; learner mới có n=18; khảo sát
-    chưa thay thế mining Discord thực tế.
-  - Artifact audit:
-    [`survey-questions.md`](evidence/survey/survey-questions.md),
-    [`survey-codebook.md`](evidence/survey/survey-codebook.md),
-    [`survey-responses-anonymized.csv`](evidence/survey/survey-responses-anonymized.csv),
-    [`survey-metrics.csv`](evidence/survey/survey-metrics.csv),
-    [`survey-summary.md`](evidence/survey/survey-summary.md) và
-    [`analysis-notes.md`](evidence/survey/analysis-notes.md).
+  - Khảo sát ngày 30/07/2026 có 20 response: 18 learner và 2 TA/Lab Coach. Log response-level nằm trong [`evidence/survey/`](evidence/survey/). `pain_confirmed_draft = 10/18 learner (55.6%)`. Eligibility ngoài team là xác minh thủ công (`UNVERIFIED` ở cấp độ chứng minh độc lập). TA findings là directional-only ($n=2$).
+- **Evidence mining Chatlog Discord — Chuẩn B:**
+  - Trích xuất $n = 88$ message từ [`data/processed/discord/messages-anonymized.csv`](data/processed/discord/messages-anonymized.csv). Cơ cấu loại message: 56 `question` (63,6%), 26 `answer` (29,5%), 5 `announcement` (5,7%), 1 `follow_up` (1,1%). Phân bổ chủ đề của 56 câu hỏi (`question`): 11 `course_policy`, 10 `team_workflow`, 9 `github`, 6 `schedule`, 6 `submission`, 5 `technical_setup`, 3 `deadline`, 3 `api_key`, 2 `checkpoint`, 1 `other` (tổng đúng 56).
 
-### Quote pain tự luận đã rà semantic PII
+### Quote pain tự luận khảo sát (đã rà PII)
 
 - R002 · learner: “thông tin bị trôi, thắc mắc không được TA giải đáp”
 - R004 · learner: “Khó tìm ra thông tin mình muốn”
 - R006 · learner: “Chưa sử dụng quen và thành thạo discord, …”
 - R013 · learner: “Ko biết hôm đó phải làm gì ở đâu”
 - R017 · learner: “Khó tìm kiếm thông tin”
-
-Các quote được giữ nguyên văn sau rà soát; không dùng hai câu Q17 chỉ đề xuất
-AI/tính năng để chứng minh pain. Pattern scan và semantic review do agent thực
-hiện không phải cam kết “PII-safe tuyệt đối”; human sign-off vẫn còn thiếu.
 
 ## §2. Impact & quyết định chọn
 
@@ -104,18 +71,17 @@ hiện không phải cam kết “PII-safe tuyệt đối”; human sign-off v�
 
 ### Mức prototype và phần thật/mock
 
-- Mức hiện tại: [ ] Sketch  [x] Integrated/Live chưa ổn định  [ ] Working.
+- Mức prototype hiện tại: Working Demo.
 - **Đã xác minh từ code/test:**
   - UI Streamlit hiển thị Chat UI, Rationale, Confidence, Trace ID.
   - Model layer Gemini-only dùng `gemini-3.5-flash-lite`.
   - Lớp **Output Contract Validator** (`output_contract.py`): Kiểm duyệt schema JSON, allowlist cặp (intent, action), ép confidence < 0.70 về hỏi lại/handoff, che thông tin nhạy cảm (Redaction), và ép Zero Hallucination Logistics.
-- **Đã chạy live nhưng chưa đạt smoke gate:**
-  - Gemini đã trả model output hợp lệ cho cả năm loại case qua các lần chạy.
-    Tuy nhiên từng run vẫn có 1–2 request timeout; run gần nhất đạt 3/5 PASS và
-    2/5 FALLBACK do timeout.
+  - Gemini real call, approved knowledge retrieval, Learner View, handoff queue và Labcoach View đều đã hoạt động trong bản demo.
+- **Kết quả Golden Eval live mới nhất:**
+  - Golden eval live gần nhất đã chạy đủ 22/22 case: 20 PASS, 2 FAIL, 0 FALLBACK (Overall 20/22 = 90,9%, Logistics 5/6, Out-of-scope 5/5, Fallback 0).
+  - Prototype vẫn chưa đạt Quality Bar vì điều kiện cứng Zero Hallucination Logistics chỉ đạt 5/6. Trạng thái chất lượng: NOT MET / HOLD.
 - **Nguồn logistics runtime:**
-  - 27 FAQ approved được promotion bằng script từ review queue; loader loại
-    record hết hạn và không dùng record handoff/needs clarification.
+  - 27 FAQ approved được promotion bằng script từ review queue; loader loại record hết hạn và không dùng record handoff/needs clarification.
 
 ### Automation
 
@@ -191,13 +157,16 @@ hiện không phải cam kết “PII-safe tuyệt đối”; human sign-off v�
 
 | Phần | Owner | Reviewer | Đầu ra chính |
 |---|---|---|---|
-| Prompt + Safety Contract | **Vũ** | **Hưng** | `codebase/prompts.py`, `codebase/output_contract.py`, `evidence/cp3-safety-design.md` |
-| Golden set + Evaluation | **Phong** | **Hưng** | `eval/golden-set.csv`, `eval/run_eval.py`, `eval/results/cp3-run-1-summary.md` |
-| Prototype + Tích hợp | **Tùng** | **Vũ** | `codebase/app.py`, `codebase/intent_engine.py`, `codebase/model_client.py` |
-| Spec + Checklist CP3 + Demo | **Hưng** | **Phong** | `spec.md`, `evidence/cp3-checklist.md` |
+| Spec, Evidence, Audit & Impact Analysis | **2A202601115 — Nguyễn Phúc Hưng** | **2A202601087 — Nguyễn Văn Phong** | `spec.md`, `evidence/impact-analysis.md`, `evidence/discord-mining-method.md` |
+| Golden set & Evaluation Runner | **2A202601087 — Nguyễn Văn Phong** | **2A202601115 — Nguyễn Phúc Hưng** | `eval/golden-set.csv`, `eval/run_eval.py`, `eval/results/` |
+| Prompting & Safety Contract | **2A202601845 — Nguyễn Tuấn Vũ (nhóm trưởng)** | **2A202601781 — Nguyễn Hữu Khánh Tùng** | `codebase/prompts.py`, `codebase/output_contract.py` |
+| Prototype App & Architecture | **2A202601781 — Nguyễn Hữu Khánh Tùng** | **2A202601845 — Nguyễn Tuấn Vũ (nhóm trưởng)** | `codebase/app.py`, `codebase/intent_engine.py`, `codebase/model_client.py` |
 
-- **Willing users ($\ge 3$ người):** Nguyễn Văn An (HV-012, Zone A), Trần Thị Bình (HV-045, Zone A), Lê Hoàng Cường (HV-089, Zone B).
-- **Validation CP5:** Hưng phân công điều phối user testing, Phong log feedback; mỗi người thử nghiệm 1 task thực tế trên UI Streamlit.
+- **Willing users ($\ge 3$ người dự kiến):** **PENDING CP5** (hiện 0/3 người đã tuyển). Theo kế hoạch CP5, nhóm dự kiến tuyển ít nhất 3 người ngoài nhóm vào ngày mai (buổi 2) để thực hiện validation và ghi nhận feedback log thực tế trên prototype. Nhóm cam kết không tự tạo tên, mã học viên hoặc kết quả validation giả.
+- **Kế hoạch Validation & Công việc còn thiếu cho CP5 (Buổi 2):**
+  1. **Tuyển dụng & Validation:** Nguyễn Phúc Hưng điều phối tuyển ≥3 willing users ngoài nhóm; Nguyễn Văn Phong thực hiện log feedback (cần ≥5 quote nguyên văn có tên/vai).
+  2. **Audit & Changelog:** Cập nhật `validation/` log và ghi nhận thay đổi vào Changelog §9.
+  3. **Kỹ thuật & Dry Run:** Nguyễn Tuấn Vũ và Nguyễn Hữu Khánh Tùng phụ trách rà soát kỹ thuật prototype Streamlit UI, chuẩn bị slide 6 trang và thực hiện dry run demo trước CP6.
 
 ## §9. Changelog
 
@@ -208,4 +177,4 @@ hiện không phải cam kết “PII-safe tuyệt đối”; human sign-off v�
 | CP3 | Thêm LLM API client + Output Contract Validator | Code path cho model thật đã có; logistics thiếu nguồn bị ép handoff và output lỗi fail-safe. |
 | CP3 Run 1 | Chạy đủ 22 case ở Safety Fallback | Ghi nhận trung thực 3/22; chưa tính là bằng chứng AI thật do thiếu API key. |
 | CP3 Gemini Golden Eval | Gọi live 22 case với Gemini real calls | Chạy thành công 22/22 case: 20 PASS, 2 FAIL, 0 FALLBACK. CP3 checkpoint hoàn thành; Quality Bar **NOT MET / HOLD** vì điều kiện cứng logistics chỉ đạt 5/6. |
-| Khảo sát | Phân tích 20 response (18 learner, 2 TA) | Bổ sung evidence có truy vết; Evidence A vẫn `UNVERIFIED`. |
+| CP4 | Audit spec.md & evidence theo checklist CP4 | Hoàn thiện 8 phần spec, chuẩn hóa số liệu bằng chứng khảo sát (n=20) và mining Discord (n=88), cập nhật bảng impact 3 ứng viên, cập nhật 4 thành viên (kèm mã HV) và lập kế hoạch CP5. |
