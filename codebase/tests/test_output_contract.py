@@ -1,6 +1,8 @@
 import json
 import unittest
 
+import _bootstrap  # noqa: F401
+
 from output_contract import SAFE_LOGISTICS_REPLY, validate_model_output
 from prompts import PROMPT_VERSION, build_system_prompt
 
@@ -9,7 +11,7 @@ def valid_output(**overrides):
     output = {
         "intent": "learning",
         "confidence": 0.91,
-        "action": "answer_with_guidance",
+        "action": "answer_briefly",
         "reply": "Mình sẽ gợi ý từng bước để bạn tự giải quyết.",
         "rationale": "Đây là câu hỏi học tập.",
     }
@@ -21,7 +23,7 @@ class OutputContractTest(unittest.TestCase):
     def test_valid_json_is_accepted(self):
         result = validate_model_output(valid_output())
         self.assertEqual(result["intent"], "learning")
-        self.assertEqual(result["action"], "answer_with_guidance")
+        self.assertEqual(result["action"], "answer_briefly")
         self.assertEqual(result["confidence"], 0.91)
 
     def test_missing_field_returns_safe_fallback(self):
@@ -71,8 +73,8 @@ class OutputContractTest(unittest.TestCase):
     def test_high_confidence_mismatched_intent_actions_fall_back(self):
         mismatches = (
             ("out_of_scope", "answer_briefly"),
-            ("ambiguous", "answer_with_guidance"),
-            ("greeting", "decline_and_redirect"),
+            ("ambiguous", "refuse_and_redirect"),
+            ("greeting", "refuse_and_redirect"),
         )
         for intent, action in mismatches:
             with self.subTest(intent=intent, action=action):
@@ -93,7 +95,7 @@ class OutputContractTest(unittest.TestCase):
             valid_output(
                 intent="out_of_scope",
                 confidence=0.98,
-                action="decline_and_redirect",
+                action="refuse_and_redirect",
                 reply=(
                     "Mình không thể làm bài hộ, nhưng có thể giải thích khái niệm "
                     "hoặc góp ý phần bạn đã làm."
@@ -102,7 +104,7 @@ class OutputContractTest(unittest.TestCase):
             )
         )
         self.assertEqual(result["intent"], "out_of_scope")
-        self.assertEqual(result["action"], "decline_and_redirect")
+        self.assertEqual(result["action"], "refuse_and_redirect")
 
     def test_empty_output_returns_safe_fallback(self):
         for empty_value in (None, "", "   "):
@@ -171,7 +173,6 @@ class OutputContractTest(unittest.TestCase):
 
     def test_sensitive_values_are_redacted_from_reply(self):
         sensitive_values = (
-            ("openai", "sk-" + "example123456789"),
             ("google", "AIza" + "ExampleKey123456789012345"),
             ("bearer", "Bearer " + "example.token.value123456"),
             ("api_key", "api_key=" + "exampleCredential123"),
@@ -188,7 +189,7 @@ class OutputContractTest(unittest.TestCase):
                 self.assertFalse(sensitive_value in result["reply"])
 
     def test_sensitive_value_is_redacted_from_rationale(self):
-        secret = "sk-" + "rationaleExample123"
+        secret = "api_key=" + "rationaleExample123"
         result = validate_model_output(
             valid_output(rationale=f"Người dùng đã gửi {secret}.")
         )

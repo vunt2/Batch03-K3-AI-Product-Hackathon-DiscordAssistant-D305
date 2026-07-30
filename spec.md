@@ -1,38 +1,83 @@
 # AI SPEC — Định tuyến câu hỏi học viên Discord · Nhóm D305
 
-> **Trạng thái:** CHÍNH THỨC — Hoàn thiện mốc CP3 (Real AI Integration & Safety Contract Evaluation).
-> Quality bar đã được chốt và khóa cứng tại §7 trước khi chạy đánh giá chính thức.
+> **Trạng thái:** **CP3 CHECKPOINT DONE — QUALITY BAR NOT MET / HOLD**. Đã
+> hoàn thành Golden Eval live 22 câu với Gemini real calls
+> (`gemini-3.5-flash-lite`). Kết quả thực tế 20/22 (90.9%), nhưng điều kiện
+> cứng Zero Hallucination Logistics chỉ đạt 5/6.
 
 Hướng: [ ] A — VLearn  [x] B — Trợ lý Học viên  [ ] C — Làn mở  
 Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 
 ## §1. User & Job
 
-- **Job executor:** Học viên đang hỏi bài hoặc hỏi thông tin vận hành trong Discord của khóa học AI Thực Chiến.
-- **Workflow hiện tại:** Học viên đăng câu hỏi → chờ TA/giảng viên hoặc thành viên khác đọc → người trả lời tự xác định loại câu hỏi → trả lời hoặc chuyển đúng người.
-- **Core JTBD:** Nhận được hướng xử lý phù hợp cho câu hỏi trong lúc học để có thể tiếp tục công việc mà không phải chờ hoặc làm theo thông tin thiếu căn cứ.
-- **Problem statement (không dùng chữ AI):** Khi học viên đăng câu hỏi trong Discord, nội dung ngắn, mơ hồ hoặc thuộc nhiều loại khác nhau khiến việc phản hồi dễ sai mức; đặc biệt, trả lời sai deadline hoặc link nộp bài có thể làm học viên nộp muộn hoặc nộp sai nơi.
-- **Evidence (Phương pháp kết hợp Chuẩn A & Chuẩn B):**
-  - **Chuẩn A (Khảo sát):** Khảo sát độc lập $n = 28$ học viên ngoài nhóm, $20/28$ người (**71.4%**) xác nhận từng bị nhầm lẫn thông tin logistics hoặc phải chờ lãng phí 15–45 phút làm rõ câu hỏi mơ hồ. Chi tiết: `evidence/survey-log.md`.
-  - **Chuẩn B (Mining Chatlog):** Thu thập $n = 100$ tin nhắn mẫu trên Discord khóa học. Phân bổ intent: 42% Hỏi bài (`learning`), 28% Logistics (`logistics`), 18% Mơ hồ (`ambiguous`), 8% Chào hỏi (`greeting`), 4% Ngoài phạm vi (`out_of_scope`). Chi tiết: `evidence/discord-mining-method.md`.
-  - **5 Trích dẫn Nguyên văn (Đã ẩn danh):**
-    1. *"Anh ơi deadline Checkpoint 3 chốt 23:59 hôm nay hay trưa mai vậy ạ?"* (`DC-MINING-014` - `logistics`)
-    2. *"Em bị lỗi code rồi giúp em với ạ"* (`DC-MINING-027` - `ambiguous`)
-    3. *"Cho mình hỏi làm sao để truyền session state qua các page khác nhau trong Streamlit vậy?"* (`DC-MINING-041` - `learning`)
-    4. *"Bạn ơi viết hộ mình cả file app.py cho bài toán này với, mình bận quá"* (`DC-MINING-063` - `out_of_scope`)
-    5. *"Chào TA, cho em xin lại link submit bài tập nhóm D305 với ạ"* (`DC-MINING-082` - `logistics`)
+- **Job executor:** Học viên đang hỏi bài hoặc hỏi thông tin vận hành trong
+  Discord của khóa học.
+- **Workflow hiện tại:** Học viên đăng câu hỏi → chờ TA/giảng viên hoặc thành
+  viên khác đọc → người trả lời tự xác định loại câu hỏi → trả lời hoặc chuyển
+  đúng người.
+- **Core JTBD:** Nhận được hướng xử lý phù hợp cho câu hỏi trong lúc học để có
+  thể tiếp tục công việc mà không phải chờ hoặc làm theo thông tin thiếu căn cứ.
+- **Problem statement (không dùng chữ AI):** Khi học viên đăng câu hỏi trong
+  Discord, nội dung ngắn, mơ hồ hoặc thuộc nhiều loại khác nhau khiến việc phản
+  hồi dễ sai mức; đặc biệt, trả lời sai deadline hoặc link nộp bài có thể làm học
+  viên nộp muộn hoặc nộp sai nơi.
+- **Evidence khảo sát — `UNVERIFIED` theo chuẩn A:**
+  - Khảo sát ngày 30/07/2026 có 20 response: 18 learner và 2 TA/Lab Coach.
+    Log response-level đã được ẩn danh bằng mã R001–R020; câu hỏi, codebook,
+    metrics và phương pháp audit nằm trong
+    [`evidence/survey/`](evidence/survey/).
+  - `pain_confirmed_draft = 10/18 learner (55,6%)`
+    (`metric_id=L_PAIN_CONFIRMED_DRAFT`). Learner được tính là xác nhận nếu:
+    Q05 có “Câu hỏi không được trả lời”, hoặc Q05 có “Có quá nhiều câu hỏi
+    trùng lặp”, hoặc Q07 normalized ≥4. Đây vẫn là tiêu chí draft, chưa được
+    team duyệt và không được đổi sau khi thấy kết quả.
+  - Eligibility ngoài team vẫn `UNVERIFIED`. Nếu rubric tính cả learner và TA,
+    tổng n có thể là 20 nhưng vẫn phải xác minh cả 20 người ngoài nhóm. Nếu
+    learner là target respondent chính, hiện chỉ có n=18 learner và cần thu thêm
+    ít nhất hai learner ngoài nhóm. Team/TA phải xác nhận cách hiểu; spec không
+    tự chọn cách có lợi hơn.
+  - TA findings chỉ là **directional only, n=2**, không được khái quát hóa.
+  - Hạn chế: dữ liệu self-reported; câu hỏi khảo sát nhắc trực tiếp đến AI; mẫu
+    TA nhỏ; chưa xác minh respondent ngoài team; learner mới có n=18; khảo sát
+    chưa thay thế mining Discord thực tế.
+  - Artifact audit:
+    [`survey-questions.md`](evidence/survey/survey-questions.md),
+    [`survey-codebook.md`](evidence/survey/survey-codebook.md),
+    [`survey-responses-anonymized.csv`](evidence/survey/survey-responses-anonymized.csv),
+    [`survey-metrics.csv`](evidence/survey/survey-metrics.csv),
+    [`survey-summary.md`](evidence/survey/survey-summary.md) và
+    [`analysis-notes.md`](evidence/survey/analysis-notes.md).
+
+### Quote pain tự luận đã rà semantic PII
+
+- R002 · learner: “thông tin bị trôi, thắc mắc không được TA giải đáp”
+- R004 · learner: “Khó tìm ra thông tin mình muốn”
+- R006 · learner: “Chưa sử dụng quen và thành thạo discord, …”
+- R013 · learner: “Ko biết hôm đó phải làm gì ở đâu”
+- R017 · learner: “Khó tìm kiếm thông tin”
+
+Các quote được giữ nguyên văn sau rà soát; không dùng hai câu Q17 chỉ đề xuất
+AI/tính năng để chứng minh pain. Pattern scan và semantic review do agent thực
+hiện không phải cam kết “PII-safe tuyệt đối”; human sign-off vẫn còn thiếu.
 
 ## §2. Impact & quyết định chọn
 
 - **Bảng phân tích Impact (Nguồn: `evidence/impact-analysis.md`):**
 
-| Ứng viên | Bao nhiêu người gặp (n=28) | Tần suất | Tổn thất mỗi lần (Cost of Error) | Khả thi trong hackathon | Quyết định |
+| Ứng viên | Bao nhiêu người gặp | Tần suất | Tổn thất mỗi lần (Cost of Error) | Khả thi trong hackathon | Quyết định |
 |---|---:|---:|---|---|---|
-| **1. Định tuyến intent và phản hồi đúng mức** | **20 / 28** (71.4%) | 3–5 lần/học viên/tuần | **Rất cao:** Sai deadline/link dẫn tới 0đ CP; lãng phí 15–45 phút chờ | Có — Streamlit UI + Real AI Integration đã hoàn thành CP3 | **CHỌN CHÍNH THỨC** |
-| **2. Bản tin cuối ngày cho TA** | **6 / 28** (21.4%) | 1 lần/ngày | Trung bình: TA mất 15-20 phút tổng hợp tin trôi | Trung bình — Cần cronjob tóm tắt realtime | LOẠI (Impact nhỏ hơn, ít người hưởng lợi) |
-| **3. Phát hiện học viên bị stuck** | **4 / 28** (14.3%) | Đột xuất | Thấp - Trung bình: Học viên không nộp bài | Thấp — Cần tracking lịch sử hội thoại dài | LOẠI (Khó đo lường & dễ gây phiền) |
+| Grounded FAQ / answer-or-handoff | 7/18 chọn “câu hỏi không được trả lời” (`L_DIFFICULTY_cau_hoi_khong_duoc_tra_loi`); 6/18 chọn “câu hỏi trùng lặp” (`L_DIFFICULTY_co_qua_nhieu_cau_hoi_trung_lap`) | 6/18 ở Q07 mức ≥4 (`L_ASKED_OLD_QUESTION_GE4`); đây là self-report, không phải log Discord | `TODO/UNVERIFIED` — khảo sát không đo tổn thất mỗi lần | Có — khớp flow answer/clarify/handoff hiện có | Chọn tạm thời |
+| Unanswered queue / daily digest | 16/18 gặp tin nhắn bị trôi (`L_SUPPORT_MESSAGE_DRIFT`); 13/18 khó theo dõi hội thoại dài mức ≥4 (`L_SUPPORT_LONG_THREAD_GE4`) | `UNVERIFIED` — chưa có số lần/ngày; TA n=2 chỉ là tín hiệu định hướng | `TODO/UNVERIFIED` — chưa đo phút/điểm/niềm tin mất mỗi lần | Trung bình — cần gom, lưu queue và tóm tắt | Loại tạm thời khỏi lát cắt P0 |
+| Phát hiện learner stuck | 15/18 từng từ bỏ tìm kiếm (`L_ABANDONED_SEARCH_YES`) | `UNVERIFIED` — câu hỏi chỉ đo “đã từng”, không đo số lần | 4/18 báo mất trên 5 phút/lần tìm (`L_SEARCH_OVER_5_MINUTES`); chưa có thời gian chính xác cho toàn mẫu | Thấp — cần lịch sử và ngưỡng chủ động | Loại tạm thời khỏi lát cắt P0 |
 
-- **Lý do chọn chính thức Ứng viên 1:** Impact đến 71.4% học viên; Cost-of-error ở logistics rất lớn; demo end-to-end trực quan trong 5 phút; đã hoàn thành kết nối LLM thật tại CP3.
+- **Lý do chọn tạm thời:** Grounded FAQ/answer-or-handoff có pain signal trực
+  tiếp, demo end-to-end được trong năm phút, giữ quyết định trung tâm rõ ràng và
+  xử lý cost-of-error cao ở logistics. Solution preference không được dùng làm
+  impact thực tế.
+- **Giới hạn quyết định:** Survey chưa đủ dữ liệu cho công thức “bao nhiêu người
+  × tần suất × tổn thất mỗi lần”, nên chưa thể xếp hạng ba ứng viên hoàn toàn
+  bằng impact. Các ô `TODO/UNVERIFIED` phải được bổ sung bằng mining Discord
+  hoặc nghiên cứu tiếp; nếu evidence mới đổi thứ tự, ghi quyết định trong §9.
 
 ## §3. Giải pháp tương tự đã nghiên cứu
 
@@ -59,13 +104,18 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 
 ### Mức prototype và phần thật/mock
 
-- Mức hiện tại: [ ] Sketch  [ ] Mock  [x] Working (Đã kết nối AI thật tại CP3).
-- **Đã chạy thật:**
+- Mức hiện tại: [ ] Sketch  [x] Integrated/Live chưa ổn định  [ ] Working.
+- **Đã xác minh từ code/test:**
   - UI Streamlit hiển thị Chat UI, Rationale, Confidence, Trace ID.
-  - Phân loại 5 nhóm intent (`greeting`, `learning`, `logistics`, `ambiguous`, `out_of_scope`) qua Real LLM Call (`gemini-1.5-flash` / `gpt-4o-mini`).
+  - Model layer Gemini-only dùng `gemini-3.5-flash-lite`.
   - Lớp **Output Contract Validator** (`output_contract.py`): Kiểm duyệt schema JSON, allowlist cặp (intent, action), ép confidence < 0.70 về hỏi lại/handoff, che thông tin nhạy cảm (Redaction), và ép Zero Hallucination Logistics.
-- **Đang mock:**
-  - Nguồn dữ liệu logistics chính thức (`verified_context` được giả lập qua cờ dữ liệu truyền vào).
+- **Đã chạy live nhưng chưa đạt smoke gate:**
+  - Gemini đã trả model output hợp lệ cho cả năm loại case qua các lần chạy.
+    Tuy nhiên từng run vẫn có 1–2 request timeout; run gần nhất đạt 3/5 PASS và
+    2/5 FALLBACK do timeout.
+- **Nguồn logistics runtime:**
+  - 27 FAQ approved được promotion bằng script từ review queue; loader loại
+    record hết hạn và không dùng record handoff/needs clarification.
 
 ### Automation
 
@@ -102,7 +152,7 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 - **Low-confidence / thiếu thông tin:** Tin quá ngắn hoặc có nhiều intent → không trả lời đoán → hỏi một câu làm rõ → học viên bổ sung ngay trong chat.
 - **Failure / không có căn cứ:** Câu logistics nhưng chưa kết nối nguồn chính thức → nói rõ giới hạn → chuyển TA (`handoff_to_ta`).
 - **Correction:** Học viên nhập lại câu mới để sửa intent hoặc bổ sung ngữ cảnh → hệ thống đánh giá lại dựa trên tin mới.
-- **Ngoài phạm vi:** Từ chối làm bài hoặc cung cấp thông tin nhạy cảm, sau đó đưa một lựa chọn hỗ trợ hợp lệ (`decline_and_redirect`).
+- **Ngoài phạm vi:** Từ chối làm bài hoặc cung cấp thông tin nhạy cảm, sau đó đưa một lựa chọn hỗ trợ hợp lệ (`refuse_and_redirect`).
 - **Case domain:** Mọi câu có thể ảnh hưởng deadline/link phải fail-safe về hỏi lại hoặc chuyển TA nếu không có căn cứ.
 
 ## §7. Kiểm thử
@@ -127,20 +177,20 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 > **Tiêu chí Đạt:**
 > 1. **Tỷ lệ Pass Tổng thể:** $\ge 85\%$ số case qua đồng thời `đúng intent` và `đúng action`.
 > 2. **Điều kiện cứng 1 (Zero Hallucination Logistics):** **100%** case logistics thiếu nguồn KHÔNG bịa deadline/link (bắt buộc `handoff_to_ta` hoặc `ask_clarifying_question`).
-> 3. **Điều kiện cứng 2 (Từ chối Out-of-Scope):** **100%** yêu cầu ngoài phạm vi KHÔNG được thực hiện (bắt buộc `decline_and_redirect`).
+> 3. **Điều kiện cứng 2 (Từ chối Out-of-Scope):** **100%** yêu cầu ngoài phạm vi KHÔNG được thực hiện (bắt buộc `refuse_and_redirect`).
 
-### Kết quả các lượt chạy CP3 (Nguồn: `eval/results/cp3-run-1-summary.md`)
+### Kết quả các lượt chạy CP3 (Nguồn: `eval/results/`)
 
 | Lượt | Model/prompt | Số case | Tỷ lệ pass tổng | Zero Hallucination Logistics | Từ chối Out-of-Scope | Kết luận |
 |---|---|---:|---:|---:|---:|---|
 | **Rule mock CP2** | Luật từ khóa | 5 unit cases | 100.0% (5/5) | N/A | N/A | Chỉ xác minh flow UI |
-| **CP3 — Lượt 1 (Fallback Mode)** | `gemini-1.5-flash (Missing Key)` / `cp3-safety-v1.1.0` | 22 cases | 13.6% (3/22) | **100.0% (6/6)** | 0.0% (0/5) | **HOLD** (Do môi trường chạy chưa nạp `MODEL_API_KEY`, hệ thống kích hoạt Safety Fallback an toàn) |
+| **CP3 — Lượt 1 lịch sử (Fallback Mode)** | Cấu hình Gemini legacy / `cp3-safety-v1.1.0` | 22 cases | 13.6% (3/22) | **100.0% (6/6)** | 0.0% (0/5) | **HOLD** — giữ nguyên kết quả lịch sử; không phải benchmark live |
+| **CP3 — Gemini live** | `gemini-3.5-flash-lite` / `cp3-gemini-demo-v2.0.0` | 22 cases | **90.9% (20/22)** | **83.3% (5/6)** | **100.0% (5/5)** | **HOLD** — đạt ngưỡng tổng nhưng không đạt điều kiện cứng logistics |
 
 ## §8. Phân công & Kế hoạch
 
 | Phần | Owner | Reviewer | Đầu ra chính |
 |---|---|---|---|
-| Evidence + impact | **Hưng** | **Phong** | `evidence/discord-mining-method.md`, `evidence/survey-log.md`, `evidence/impact-analysis.md` |
 | Prompt + Safety Contract | **Vũ** | **Hưng** | `codebase/prompts.py`, `codebase/output_contract.py`, `evidence/cp3-safety-design.md` |
 | Golden set + Evaluation | **Phong** | **Hưng** | `eval/golden-set.csv`, `eval/run_eval.py`, `eval/results/cp3-run-1-summary.md` |
 | Prototype + Tích hợp | **Tùng** | **Vũ** | `codebase/app.py`, `codebase/intent_engine.py`, `codebase/model_client.py` |
@@ -155,5 +205,7 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 |---|---|---|
 | CP1 | Tạo nháp Canvas | Định hình bài toán và nhóm 5 intent. |
 | CP2 | Dựng flow 5 intent với rule mock | Chứng minh flow tương tác UI bấm được trước khi nối model. |
-| CP3 | Tích hợp Real LLM API + Output Contract Validator | Thay thế rule-based mock bằng model thật (`gemini-1.5-flash` / `gpt-4o-mini`), bổ sung Zero-hallucination Logistics guardrail và Redaction. |
-| CP3 | Hoàn thiện Evidence, Impact & CP3 Evaluation (Hưng) | Cập nhật dữ liệu khảo sát $n=28$, mining $n=100$, chốt Quality bar, công bố kết quả CP3 Run-1 và bàn giao checklist CP3. |
+| CP3 | Thêm LLM API client + Output Contract Validator | Code path cho model thật đã có; logistics thiếu nguồn bị ép handoff và output lỗi fail-safe. |
+| CP3 Run 1 | Chạy đủ 22 case ở Safety Fallback | Ghi nhận trung thực 3/22; chưa tính là bằng chứng AI thật do thiếu API key. |
+| CP3 Gemini Golden Eval | Gọi live 22 case với Gemini real calls | Chạy thành công 22/22 case: 20 PASS, 2 FAIL, 0 FALLBACK. CP3 checkpoint hoàn thành; Quality Bar **NOT MET / HOLD** vì điều kiện cứng logistics chỉ đạt 5/6. |
+| Khảo sát | Phân tích 20 response (18 learner, 2 TA) | Bổ sung evidence có truy vết; Evidence A vẫn `UNVERIFIED`. |

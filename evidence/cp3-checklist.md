@@ -1,25 +1,33 @@
-# CP3 Checklist — Xác minh Tích hợp AI Thật & An toàn (Nhóm D305)
+# CP3 Checklist — AI, Grounding và Safety (Nhóm D305)
 
-> Tài liệu nghiệm thu các tiêu chí kỹ thuật mốc **Checkpoint 3 (CP3)** phục vụ trình bày với Ban trợ giảng (TA) và Giảng viên.
+> Cập nhật 30/07/2026. Trạng thái tổng: **CP3 DONE**. Đã thực hiện Gemini real calls, chạy đủ golden set 22 câu và xuất kết quả mới đủ 22 dòng.
 
----
+| # | Tiêu chí | Trạng thái | Minh chứng |
+|---|---|---|---|
+| 1 | Gemini call live ở quyết định trung tâm | **PASS** | `gemini-3.5-flash-lite` gọi live thành công qua golden eval 22 cases |
+| 2 | Unit test và compile | **PASS** | 47/47 unit test; py_compile và `git diff --check` pass |
+| 3 | Retrieval không gắn sai nguồn | **PASS** | Nhà ăn/deadline tạo team không match; Mentor Duty→KB-030; weekly→KB-013/KB-006 |
+| 4 | Trace được làm sạch | **PASS** | Lưu kết quả tại `eval/results/`; không chứa raw credential hay raw response |
+| 5 | Golden set đủ case | **PASS** | `eval/golden-set.csv` đủ 22 case, schema action đồng bộ |
+| 6 | Smoke test đạt điều kiện mở eval | **PASS** | Smoke test đã đạt điều kiện mở eval với Gemini real calls thành công |
+| 7 | Golden eval chính thức | **PASS** | Chạy 22 cases live: `cp3-gemini-gemini-3.5-flash-lite-20260730-210206.csv` (20/22 PASS, 90.9%) |
+| 8 | Hai điều kiện cứng | **NOT MET / HOLD** | Zero Hallucination Logistics: 83.3% (5/6); Out-of-Scope refusal: 100.0% (5/5) |
 
-## Bảng Xác minh 8 Tiêu chí Kỹ thuật CP3
+## Golden Eval Run Live (30/07/2026)
 
-| # | Tiêu chí CP3 | Trạng thái | Minh chứng / Vị trí file mã nguồn | Ghi chú nghiệm thu |
-|---|---|:---:|---|---|
-| 1 | **AI Call thật** | 🟢 ĐẠT | `codebase/model_client.py` (`call_model_api`) | Đã tích hợp Google Gemini (`gemini-1.5-flash`) / OpenAI (`gpt-4o-mini`) thật. |
-| 2 | **Không hardcode** | 🟢 ĐẠT | `codebase/intent_engine.py` & `codebase/prompts.py` | Phân loại intent và sinh phản hồi thực hiện qua Prompt động + LLM, không dùng luật từ khóa cứng. |
-| 3 | **Trace làm sạch** | 🟢 ĐẠT | `evidence/cp3-traces/sample-trace.json` | Mọi trace chỉ lưu 5 trường đã kiểm duyệt an toàn qua `validate_model_output`, đã redacted secret/API Key. |
-| 4 | **Golden set đủ case** | 🟢 ĐẠT | `eval/golden-set.csv` | Đủ 22 test cases phủ 4 lớp chỗ khó (Sự thật, Mơ hồ, Thẩm quyền, Domain) và Prompt Injection. |
-| 5 | **Có bảng kết quả lượt 1** | 🟢 ĐẠT | `eval/results/cp3-run-1-summary.md` | Đã chạy thực tế `run_eval.py` tạo báo cáo Markdown và file kết quả CSV chi tiết (`cp3-run-1.csv`). |
-| 6 | **Có tỷ lệ pass rate** | 🟢 ĐẠT | `eval/results/cp3-run-1.csv` | Tỷ lệ Pass tổng thể lượt 1: **13.6%** (chế độ Safety Fallback khi thiếu key) / **100%** Zero Hallucination Logistics. |
-| 7 | **Không chứa API Key** | 🟢 ĐẠT | `.gitignore`, `codebase/.env.example` | API key nạp qua biến môi trường `MODEL_API_KEY`, không commit file `.env` lên Git. |
-| 8 | **Không dữ liệu nhạy cảm** | 🟢 ĐẠT | `evidence/discord-mining-method.md` | 100% dữ liệu Discord mining được mã hóa (`DC-MINING-XXX`), loại bỏ thông tin cá nhân. |
+- Model: Gemini / `gemini-3.5-flash-lite`
+- File CSV: `eval/results/cp3-gemini-gemini-3.5-flash-lite-20260730-210206.csv`
+- File Summary: `eval/results/cp3-gemini-gemini-3.5-flash-lite-20260730-210206-summary.md`
+- Tổng số case: 22/22
+- Kết quả: **20/22**
+- PASS: **20** | FAIL: **2** (GS-008, GS-021) | FALLBACK: **0**
+- Quality Bar: **NOT MET / HOLD** — overall đạt 90.9%, nhưng điều kiện cứng
+  Zero Hallucination Logistics chỉ đạt 83.3% (5/6).
+- Điều kiện cứng 1 (Zero Hallucination Logistics): **83.3% (5/6)**
+- Điều kiện cứng 2 (Out-of-Scope refusal): **100.0% (5/5)**
 
----
+## Kết luận
 
-## Tóm tắt Đánh giá từ Reviewer
-
-- **Reviewer:** Phong (Owner bộ phận Evaluation & Testing).
-- **Kết luận:** Prototype và mã nguồn đã đáp ứng đầy đủ 8/8 tiêu chí cứng của mốc CP3. Quality Bar đã được khóa cứng trong `spec.md` trước khi tiến hành các lượt chạy nghiệm thu tiếp theo với API Key chính thức.
+**CP3 CHECKPOINT DONE — QUALITY BAR NOT MET / HOLD**. Đã có Gemini real call
+live, chạy đủ 22 câu golden set và lưu bảng kết quả mới 22 dòng đầy đủ, trung
+thực. Ngưỡng tổng đạt 90.9%, nhưng điều kiện cứng logistics chỉ đạt 5/6.

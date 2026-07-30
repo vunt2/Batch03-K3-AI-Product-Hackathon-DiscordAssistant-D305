@@ -1,19 +1,34 @@
-"""Streamlit prototype for the Discord learner assistant — CP3 Real Model Integration."""
+"""Streamlit demo for the Gemini-powered learner and Labcoach workflow."""
 
 from __future__ import annotations
 
-import os
+from datetime import datetime
+import html
+from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
 
-from intent_engine import IntentResult, classify_message
-from model_client import get_model_config
 
-load_dotenv()
+CODEBASE_DIR = Path(__file__).resolve().parent
+ENV_PATH = CODEBASE_DIR / ".env"
+load_dotenv(ENV_PATH, override=ENV_PATH.exists())
+
+from handoff_queue import (  # noqa: E402
+    PENDING,
+    RESOLVED,
+    enqueue_handoff,
+    queue_counts,
+    reopen_handoff,
+    resolve_handoff,
+)
+from intent_engine import IntentResult, classify_message  # noqa: E402
+from knowledge_base import load_approved_knowledge  # noqa: E402
+from model_client import get_gemini_status  # noqa: E402
+
 
 st.set_page_config(
-    page_title="K3 Learning Assistant · CP3",
+    page_title="D305 Learner Assistant",
     page_icon="🧭",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -23,150 +38,255 @@ st.markdown(
     """
     <style>
     :root {
-        --ink: #f7f8fc;
-        --muted: #aeb4c5;
+        --canvas: #101119;
         --panel: #171923;
         --panel-soft: #202330;
         --stroke: #303445;
+        --ink: #f7f8fc;
+        --muted: #aeb4c5;
         --brand: #7c6cf2;
         --brand-soft: rgba(124, 108, 242, .16);
         --success: #57d9a3;
         --warning: #ffd27d;
+        --danger: #ff9f9f;
     }
     .stApp {
         background:
             radial-gradient(circle at 78% -10%, rgba(124,108,242,.20), transparent 30rem),
-            #101119;
+            var(--canvas);
         color: var(--ink);
     }
+    [data-testid="stHeader"] { background: transparent; }
     [data-testid="stSidebar"] {
         background: #141620;
         border-right: 1px solid var(--stroke);
     }
-    [data-testid="stHeader"] { background: transparent; }
-    .block-container { max-width: 1180px; padding-top: 2rem; }
-    .eyebrow {
-        color: #a99dff;
+    [data-testid="stSidebar"] * { color: var(--ink); }
+    .block-container {
+        max-width: 1240px;
+        padding-top: 2rem;
+        padding-bottom: 4rem;
+    }
+    h1, h2, h3 { letter-spacing: -.025em; color: var(--ink); }
+    .product-mark {
+        color: var(--brand);
         font-size: .76rem;
         font-weight: 800;
         letter-spacing: .13em;
         text-transform: uppercase;
-        margin-bottom: .55rem;
+        margin-bottom: .45rem;
     }
     .hero-title {
-        font-size: clamp(2rem, 5vw, 3.5rem);
-        line-height: 1.02;
-        letter-spacing: -.045em;
+        color: var(--ink);
+        font-size: clamp(2rem, 4.8vw, 3.6rem);
+        line-height: 1.04;
+        letter-spacing: -.052em;
         font-weight: 820;
-        margin: 0;
+        margin: 0 0 .65rem;
     }
     .hero-copy {
         color: var(--muted);
-        font-size: 1rem;
-        max-width: 700px;
-        margin: .85rem 0 1.1rem;
+        max-width: 760px;
+        font-size: 1.04rem;
+        line-height: 1.65;
+        margin-bottom: 1.25rem;
     }
-    .status-badge {
+    .status-row {
+        display: flex;
+        gap: .55rem;
+        flex-wrap: wrap;
+        margin: .4rem 0 1.4rem;
+    }
+    .pill {
         display: inline-flex;
-        gap: .45rem;
         align-items: center;
-        padding: .4rem .85rem;
+        gap: .38rem;
+        padding: .36rem .7rem;
+        border: 1px solid var(--stroke);
         border-radius: 999px;
-        font-size: .8rem;
+        background: rgba(32,35,48,.92);
+        color: #d9dce7;
+        font-size: .76rem;
         font-weight: 700;
-        margin-bottom: 1rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
     }
-    .badge-ai {
-        border: 1px solid #57d9a3;
-        background: rgba(87, 217, 163, .12);
+    .pill-ok {
         color: #7ef0be;
+        border-color: rgba(87,217,163,.48);
+        background: rgba(87,217,163,.12);
     }
-    .badge-fallback {
-        border: 1px solid #ffd27d;
-        background: rgba(255, 210, 125, .12);
+    .pill-warn {
         color: #ffe4a0;
+        border-color: rgba(255,210,125,.48);
+        background: rgba(255,210,125,.12);
     }
-    .status-dot {
-        width: .5rem;
-        height: .5rem;
-        border-radius: 50%;
+    .pill-brand {
+        color: #c7c0ff;
+        border-color: rgba(124,108,242,.55);
+        background: var(--brand-soft);
     }
-    .dot-ai { background: #57d9a3; box-shadow: 0 0 0 .22rem rgba(87,217,163,.2); }
-    .dot-fallback { background: #ffd27d; box-shadow: 0 0 0 .22rem rgba(255,210,125,.2); }
-    
-    .route-card {
+    .value-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .8rem;
+        margin: 1rem 0 1.5rem;
+    }
+    .value-card {
+        min-width: 0;
         border: 1px solid var(--stroke);
-        background: linear-gradient(135deg, rgba(32,35,48,.96), rgba(23,25,35,.96));
         border-radius: 16px;
-        padding: 1rem 1.1rem;
-        min-height: 124px;
+        background: linear-gradient(
+            135deg,
+            rgba(32,35,48,.96),
+            rgba(23,25,35,.96)
+        );
+        padding: 1rem;
+        box-shadow: 0 12px 32px rgba(0,0,0,.18);
     }
-    .route-kicker {
-        color: var(--muted);
-        font-size: .72rem;
-        text-transform: uppercase;
-        letter-spacing: .09em;
-        margin-bottom: .35rem;
-    }
-    .route-value {
-        color: var(--ink);
-        font-weight: 760;
-        font-size: 1.12rem;
-        margin-bottom: .35rem;
-    }
-    .route-note { color: var(--muted); font-size: .82rem; }
-    .safe-note {
-        border-left: 3px solid var(--success);
-        background: rgba(87,217,163,.08);
-        color: #cbeedd;
-        border-radius: 0 10px 10px 0;
-        padding: .75rem .9rem;
-        font-size: .84rem;
-        margin: .5rem 0 1rem;
-    }
+    .value-card strong { display: block; color: var(--ink); margin-bottom: .25rem; }
+    .value-card span { color: var(--muted); font-size: .86rem; line-height: 1.45; }
     [data-testid="stChatMessage"] {
+        background: rgba(23,25,35,.88);
         border: 1px solid var(--stroke);
-        border-radius: 14px;
-        background: rgba(23,25,35,.78);
+        border-radius: 16px;
         padding: .35rem .55rem;
+        box-shadow: 0 10px 26px rgba(0,0,0,.14);
+        overflow-wrap: anywhere;
+    }
+    [data-testid="stChatMessage"] p { color: var(--ink); }
+    [data-testid="stChatInput"] {
+        background: var(--panel-soft);
+        border: 1px solid #494e64;
+        border-radius: 16px;
+    }
+    [data-testid="stChatInput"] textarea {
+        color: var(--ink) !important;
+        -webkit-text-fill-color: var(--ink);
+    }
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: var(--muted) !important;
+    }
+    .source-box {
+        margin-top: .7rem;
+        padding: .72rem .8rem;
+        border-radius: 12px;
+        border: 1px solid rgba(87,217,163,.45);
+        background: rgba(87,217,163,.10);
+        color: #bdebd8;
+        font-size: .82rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+    .coach-answer {
+        margin-top: .75rem;
+        padding: .8rem .9rem;
+        border-radius: 12px;
+        border-left: 4px solid var(--brand);
+        background: var(--brand-soft);
+        color: #dedaff;
+    }
+    .queue-empty {
+        padding: 3rem 1rem;
+        text-align: center;
+        border: 1px dashed #494e64;
+        border-radius: 18px;
+        background: rgba(23,25,35,.78);
+        color: var(--muted);
     }
     .stButton > button {
-        border-radius: 10px;
+        border-radius: 11px;
         border: 1px solid #3a3e51;
-        background: #202330;
-        color: #eef0f7;
+        background: var(--panel-soft);
+        color: var(--ink);
+        min-height: 2.55rem;
         transition: transform .15s ease, border-color .15s ease;
     }
     .stButton > button:hover {
         transform: translateY(-1px);
-        border-color: #8275ed;
-        color: white;
+        border-color: var(--brand);
+        background: rgba(124,108,242,.16);
+        color: #ffffff;
     }
-    [data-testid="stChatInput"] { border-color: #494e64; }
+    .stButton > button:disabled {
+        background: #181a23;
+        color: #6f7484;
+        border-color: #292c38;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stExpander"],
+    [data-testid="stMetric"] {
+        background: rgba(23,25,35,.82);
+        border-color: var(--stroke);
+        color: var(--ink);
+    }
+    [data-testid="stMetricValue"],
+    [data-testid="stMetricLabel"] {
+        color: var(--ink);
+    }
+    [data-baseweb="radio"] label,
+    [data-testid="stCheckbox"] label,
+    [data-testid="stExpander"] summary {
+        color: var(--ink) !important;
+    }
+    [data-testid="stTextArea"] textarea {
+        background: var(--panel-soft);
+        color: var(--ink);
+        -webkit-text-fill-color: var(--ink);
+        border-color: #494e64;
+    }
+    [data-testid="stTextArea"] textarea::placeholder {
+        color: var(--muted);
+    }
+    [data-testid="stAlert"] {
+        background: rgba(32,35,48,.94);
+        border: 1px solid var(--stroke);
+        color: var(--ink);
+    }
+    [data-testid="stAlert"] p { color: var(--ink); }
+    hr { border-color: var(--stroke) !important; }
+    code {
+        color: #c7c0ff;
+        background: rgba(124,108,242,.12);
+    }
+    @media (max-width: 760px) {
+        .block-container { padding: 1.2rem .9rem 3rem; }
+        .value-strip { grid-template-columns: 1fr; }
+        .hero-title { font-size: 2.3rem; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-SAMPLE_MESSAGES = {
-    "👋 Chào hỏi": "Chào bot, bạn giúp được gì?",
-    "📚 Hỏi bài": "Mình chưa hiểu intent classifier hoạt động như thế nào.",
-    "📅 Logistics": "Link nộp CP2 ở đâu vậy?",
-    "❓ Mơ hồ": "Cái này làm sao vậy?",
-    "🛡️ Ngoài phạm vi": "Làm hộ mình toàn bộ bài này và đưa đáp án nhé.",
+WELCOME_MESSAGE = {
+    "role": "assistant",
+    "content": (
+        "Chào bạn! Mình có thể tìm câu trả lời từ nguồn khóa học đã được xác minh, "
+        "hỏi lại khi chưa rõ hoặc chuyển câu hỏi cho Labcoach."
+    ),
+    "result": None,
 }
+
+SAMPLE_MESSAGES = (
+    ("Weekly report gồm gì?", "Weekly report cần nộp nội dung gì?"),
+    (
+        "Ai nộp weekly report?",
+        "Một người hay cả team phải nộp weekly report?",
+    ),
+    ("Lịch Mentor Duty", "Mentor Duty diễn ra khi nào?"),
+    ("Deadline tạo team", "Deadline tạo team là khi nào?"),
+    ("Nhờ làm hộ bài", "Làm hộ mình toàn bộ bài và đưa đáp án hoàn chỉnh."),
+)
 
 
 def initialize_state() -> None:
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": "Chào bạn! Hãy chọn một tình huống mẫu hoặc nhập câu hỏi để trợ lý phân loại ý định.",
-                "result": None,
-            }
-        ]
+    st.session_state.setdefault("messages", [dict(WELCOME_MESSAGE)])
+    st.session_state.setdefault("handoff_queue", [])
+    st.session_state.setdefault("navigation", "Learner")
+    st.session_state.setdefault("queue_filter", "Đang chờ")
+    st.session_state.setdefault("flash_message", "")
 
 
 def submit_message(message: str) -> None:
@@ -174,182 +294,358 @@ def submit_message(message: str) -> None:
     if not clean_message:
         return
 
-    # Add user message to history immediately
     st.session_state.messages.append(
         {"role": "user", "content": clean_message, "result": None}
     )
-
-    # Execute classification with spinner status
-    with st.spinner("🤖 Trợ lý AI đang định tuyến và kiểm tra contract an toàn..."):
-        try:
+    try:
+        with st.spinner("Gemini đang kiểm tra ý định và nguồn phù hợp…"):
             result = classify_message(clean_message)
-        except Exception as err:
-            # Defensive catch so conversation history is never lost or app crashed
-            result = {
-                "intent": "ambiguous",
-                "label": "Lỗi ứng dụng",
-                "confidence": 0.0,
-                "action": "ask_clarifying_question",
-                "action_label": "Hỏi lại",
-                "reply": "Có lỗi hệ thống xảy ra. Vui lòng thử lại.",
-                "rationale": f"Lỗi ngoài dự kiến: {err}",
-                "is_fallback": True,
-                "model_name": "System Defensive Catch",
-                "trace_id": "err-defensive",
-            }
+    except Exception:
+        result = {
+            "intent": "ambiguous",
+            "label": "Cần làm rõ",
+            "confidence": 0.0,
+            "action": "ask_clarifying_question",
+            "action_label": "Hỏi lại",
+            "reply": (
+                "Trợ lý đang gặp sự cố tạm thời. "
+                "Bạn hãy thử lại hoặc chuyển câu hỏi cho Labcoach."
+            ),
+            "rationale": "Lỗi ngoài dự kiến đã được ẩn khỏi giao diện.",
+            "is_fallback": True,
+            "model_name": "Gemini",
+            "trace_id": f"trace-ui-{len(st.session_state.messages):04d}",
+            "model_requested": "Gemini",
+            "model_used": "Gemini",
+            "used_fallback": True,
+            "error_type": "unexpected_error",
+            "error_code": None,
+            "knowledge_id": None,
+            "source_ids": [],
+            "topic": None,
+            "source_verified": False,
+        }
 
+    handoff_id = None
+    if result["action"] == "handoff_to_ta":
+        handoff_id = enqueue_handoff(
+            st.session_state.handoff_queue,
+            question=clean_message,
+            intent=result["intent"],
+            reason=result["rationale"],
+            trace_id=result["trace_id"],
+            model=result["model_used"],
+        )
     st.session_state.messages.append(
-        {"role": "assistant", "content": result["reply"], "result": result}
+        {
+            "role": "assistant",
+            "content": result["reply"],
+            "result": result,
+            "handoff_id": handoff_id,
+            "labcoach_response": "",
+            "resolved_at": None,
+        }
     )
 
 
 def render_decision(result: IntentResult) -> None:
-    intent_color = {
-        "greeting": "#8be0c0",
-        "learning": "#9fb8ff",
-        "logistics": "#ffd27d",
-        "ambiguous": "#d4b5ff",
-        "out_of_scope": "#ff9f9f",
-    }.get(result["intent"], "#d4b5ff")
-
-    badge_type = (
-        '<span style="padding:.22rem .55rem;border-radius:999px;background:#ffd27d22;color:#ffe4a0;font-size:.75rem;font-weight:700;border:1px solid #ffd27d66">🛡️ Safety Fallback</span>'
-        if result.get("is_fallback")
-        else '<span style="padding:.22rem .55rem;border-radius:999px;background:#57d9a322;color:#7ef0be;font-size:.75rem;font-weight:700;border:1px solid #57d9a366">🤖 LLM Real Call</span>'
+    call_label = (
+        "Safety fallback" if result["used_fallback"] else "Gemini real call"
     )
-
+    call_class = "pill-warn" if result["used_fallback"] else "pill-ok"
     st.markdown(
         f"""
-        <div style="display:flex;gap:.45rem;flex-wrap:wrap;margin:.2rem 0 .65rem">
-          {badge_type}
-          <span style="padding:.22rem .55rem;border-radius:999px;background:{intent_color}20;color:{intent_color};font-size:.75rem;font-weight:750;border:1px solid {intent_color}55">
-            {result["label"]}
-          </span>
-          <span style="padding:.22rem .55rem;border-radius:999px;background:#292c3a;color:#d9dce7;font-size:.75rem;font-weight:650;border:1px solid #3b3f51">
-            {result["confidence"]:.0%} tin cậy
-          </span>
-          <span style="padding:.22rem .55rem;border-radius:999px;background:#292c3a;color:#d9dce7;font-size:.75rem;font-weight:650;border:1px solid #3b3f51">
-            {result["action_label"]}
-          </span>
+        <div class="status-row">
+          <span class="pill {call_class}">{html.escape(call_label)}</span>
+          <span class="pill pill-brand">Intent · {html.escape(result["label"])}</span>
+          <span class="pill">Action · {html.escape(result["action_label"])}</span>
+          <span class="pill">Tin cậy · {result["confidence"]:.0%}</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    with st.expander("Vì sao trợ lý chọn đường này? (Trace & Rationale)"):
-        st.caption(f"**Rationale:** {result['rationale']}")
-        st.caption(f"**Model:** {result.get('model_name', 'N/A')} | **Trace ID:** `{result.get('trace_id', 'N/A')}`")
+
+    if result["source_verified"]:
+        source_ids = ", ".join(result["source_ids"])
+        st.markdown(
+            f"""
+            <div class="source-box">
+              <strong>✓ Nguồn đã được xác minh</strong><br/>
+              Knowledge ID: <strong>{html.escape(result["knowledge_id"] or "")}</strong>
+              · Source ID: {html.escape(source_ids)}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with st.expander("Chi tiết quyết định"):
+        st.write(result["rationale"])
+        st.caption(
+            f"Trace ID: {result['trace_id']} · Model: {result['model_used']}"
+        )
+
+
+def render_learner_view() -> None:
+    st.markdown(
+        '<div class="product-mark">Learner workspace</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<h1 class="hero-title">Hỏi nhanh.<br/>Nhận đúng nguồn.</h1>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="hero-copy">
+          Learner nhận câu trả lời từ knowledge đã được xác minh. Những câu chưa
+          đủ căn cứ được chuyển thẳng vào queue để Labcoach xử lý.
+        </div>
+        <div class="value-strip">
+          <div class="value-card"><strong>① Tìm nguồn</strong><span>Chỉ dùng knowledge approved, còn hiệu lực và đúng chủ đề.</span></div>
+          <div class="value-card"><strong>② Quyết định an toàn</strong><span>Gemini chọn trả lời, hỏi lại, từ chối hoặc handoff.</span></div>
+          <div class="value-card"><strong>③ Có người tiếp nhận</strong><span>Câu bot chưa biết không bị bỏ quên trong hội thoại.</span></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("#### Câu hỏi mẫu")
+    sample_columns = st.columns(3)
+    for index, (label, sample) in enumerate(SAMPLE_MESSAGES):
+        with sample_columns[index % 3]:
+            if st.button(
+                label,
+                key=f"sample-{index}",
+                use_container_width=True,
+            ):
+                submit_message(sample)
+                st.rerun()
+
+    st.markdown("#### Hội thoại")
+    for item in st.session_state.messages:
+        with st.chat_message(item["role"]):
+            st.write(item["content"])
+            if item.get("result"):
+                render_decision(item["result"])
+            if item.get("labcoach_response"):
+                st.markdown(
+                    f"""
+                    <div class="coach-answer">
+                      <strong>Phản hồi từ Labcoach</strong><br/>
+                      {html.escape(item["labcoach_response"])}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    if prompt := st.chat_input("Nhập câu hỏi của bạn…"):
+        submit_message(prompt)
+        st.rerun()
+
+
+def _format_timestamp(value: str | None) -> str:
+    if not value:
+        return "—"
+    try:
+        return datetime.fromisoformat(value).strftime("%d/%m/%Y · %H:%M")
+    except ValueError:
+        return value
+
+
+def _sync_labcoach_response(
+    handoff_id: str,
+    response: str,
+    resolved_at: str | None,
+) -> None:
+    for message in st.session_state.messages:
+        if message.get("handoff_id") == handoff_id:
+            message["labcoach_response"] = response
+            message["resolved_at"] = resolved_at
+
+
+def render_labcoach_view() -> None:
+    pending_count, resolved_count = queue_counts(st.session_state.handoff_queue)
+    st.markdown(
+        '<div class="product-mark">Labcoach workspace</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<h1 class="hero-title">Một queue.<br/>Không sót câu hỏi.</h1>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="hero-copy">Xử lý tập trung các câu bot chưa có đủ căn cứ. Phản hồi chỉ tồn tại trong phiên demo và không tự động trở thành knowledge chính thức.</div>',
+        unsafe_allow_html=True,
+    )
+
+    metric_columns = st.columns(2)
+    metric_columns[0].metric("Đang chờ", pending_count)
+    metric_columns[1].metric("Đã xử lý", resolved_count)
+
+    if st.session_state.flash_message:
+        st.success(st.session_state.flash_message)
+        st.session_state.flash_message = ""
+
+    st.radio(
+        "Lọc câu hỏi",
+        ("Đang chờ", "Đã xử lý", "Tất cả"),
+        horizontal=True,
+        key="queue_filter",
+    )
+    filter_status = {
+        "Đang chờ": PENDING,
+        "Đã xử lý": RESOLVED,
+        "Tất cả": None,
+    }[st.session_state.queue_filter]
+    visible_items = [
+        item
+        for item in reversed(st.session_state.handoff_queue)
+        if filter_status is None or item["status"] == filter_status
+    ]
+
+    if not visible_items:
+        st.markdown(
+            """
+            <div class="queue-empty">
+              <div style="font-size:2rem;margin-bottom:.5rem">✓</div>
+              <strong>Chưa có câu hỏi trong nhóm này</strong><br/>
+              Câu Learner được handoff sẽ xuất hiện tại đây.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    for item in visible_items:
+        with st.container(border=True):
+            status_label = (
+                "Đang chờ" if item["status"] == PENDING else "Đã xử lý"
+            )
+            status_class = (
+                "pill-warn" if item["status"] == PENDING else "pill-ok"
+            )
+            st.markdown(
+                f"""
+                <div class="status-row">
+                  <span class="pill {status_class}">{status_label}</span>
+                  <span class="pill pill-brand">{html.escape(item["intent"])}</span>
+                  <span class="pill">{html.escape(item["handoff_id"])}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.subheader(item["question"])
+            st.caption(
+                f"Tạo lúc {_format_timestamp(item['created_at'])} · "
+                f"Trace `{item['trace_id']}` · Model `{item['model']}`"
+            )
+            with st.expander("Lý do chuyển Labcoach"):
+                st.write(item["reason"])
+
+            if item["status"] == PENDING:
+                response = st.text_area(
+                    "Phản hồi cho Learner",
+                    key=f"response-{item['handoff_id']}",
+                    placeholder=(
+                        "Nhập câu trả lời đã được Labcoach kiểm tra…"
+                    ),
+                )
+                if st.button(
+                    "Gửi phản hồi và đánh dấu đã xử lý",
+                    key=f"resolve-{item['handoff_id']}",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    if not response.strip():
+                        st.warning("Vui lòng nhập phản hồi trước khi xử lý.")
+                    elif resolve_handoff(
+                        st.session_state.handoff_queue,
+                        item["handoff_id"],
+                        response,
+                    ):
+                        _sync_labcoach_response(
+                            item["handoff_id"],
+                            response.strip(),
+                            item["resolved_at"],
+                        )
+                        st.session_state.flash_message = (
+                            "Đã gửi phản hồi cho Learner và đánh dấu câu hỏi đã xử lý."
+                        )
+                        st.rerun()
+            else:
+                st.markdown("**Phản hồi đã gửi**")
+                st.info(item["labcoach_response"])
+                st.caption(
+                    f"Xử lý lúc {_format_timestamp(item['resolved_at'])}"
+                )
+                if st.button(
+                    "Mở lại câu hỏi",
+                    key=f"reopen-{item['handoff_id']}",
+                    use_container_width=True,
+                ):
+                    reopen_handoff(
+                        st.session_state.handoff_queue,
+                        item["handoff_id"],
+                    )
+                    st.session_state.flash_message = (
+                        "Đã mở lại câu hỏi trong hàng chờ."
+                    )
+                    st.rerun()
+
+
+def render_sidebar() -> None:
+    gemini_status = get_gemini_status()
+    knowledge_count = len(load_approved_knowledge())
+    pending_count, _ = queue_counts(st.session_state.handoff_queue)
+
+    with st.sidebar:
+        st.markdown("## ✦ D305 Assistant")
+        st.caption("Learner support · Gemini")
+        st.radio(
+            "Không gian làm việc",
+            ("Learner", "Labcoach"),
+            key="navigation",
+            label_visibility="collapsed",
+        )
+        st.divider()
+
+        if gemini_status["configured"]:
+            st.success("Gemini Ready")
+        else:
+            st.warning("Gemini chưa được cấu hình")
+        st.caption(f"Model: `{gemini_status['model']}`")
+        st.caption(f"Knowledge đã tải: **{knowledge_count} nguồn**")
+        if pending_count:
+            st.info(f"Labcoach có **{pending_count}** câu đang chờ.")
+
+        st.divider()
+        st.markdown("**Giá trị demo**")
+        st.caption("✓ Trả lời từ nguồn đã xác minh")
+        st.caption("✓ Không đoán logistics thiếu nguồn")
+        st.caption("✓ Handoff vào queue tập trung")
+
+        st.divider()
+        st.markdown("**Xóa dữ liệu phiên demo**")
+        confirmed = st.checkbox(
+            "Tôi xác nhận xóa hội thoại và queue",
+            key="reset_confirmed",
+        )
+        if st.button(
+            "Xóa dữ liệu phiên",
+            disabled=not confirmed,
+            use_container_width=True,
+        ):
+            st.session_state.messages = [dict(WELCOME_MESSAGE)]
+            st.session_state.handoff_queue = []
+            st.session_state.flash_message = ""
+            st.session_state.reset_confirmed = False
+            st.toast("Đã xóa dữ liệu phiên demo.")
+            st.rerun()
 
 
 initialize_state()
-api_key, active_model = get_model_config()
-
-with st.sidebar:
-    st.markdown("### 🧭 K3 Assistant")
-    st.caption("AI Integration · CP3")
-    st.divider()
-
-    st.markdown("**Cấu hình Môi trường**")
-    if api_key:
-        st.markdown(
-            f"""
-            <div style="padding:.6rem .8rem;background:rgba(87,217,163,.1);border:1px solid #57d9a3;border-radius:10px;font-size:.82rem">
-              <span style="color:#7ef0be;font-weight:700">🟢 AI Ready</span><br/>
-              <span style="color:#aeb4c5">Model: <code>{active_model}</code></span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            """
-            <div style="padding:.6rem .8rem;background:rgba(255,210,125,.1);border:1px solid #ffd27d;border-radius:10px;font-size:.82rem">
-              <span style="color:#ffe4a0;font-weight:700">🟡 Missing MODEL_API_KEY</span><br/>
-              <span style="color:#aeb4c5">Chạy ở chế độ Fallback</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.divider()
-    st.markdown("**Chạy nhanh tình huống mẫu**")
-    st.caption("Mỗi nút bấm mô phỏng 1 intent thực tế.")
-    for label, sample in SAMPLE_MESSAGES.items():
-        if st.button(label, use_container_width=True, key=label):
-            submit_message(sample)
-            st.rerun()
-
-    st.divider()
-    st.markdown("**Phạm vi CP3**")
-    st.markdown(
-        """
-        - Lời gọi Model LLM thật
-        - Output Contract Validator
-        - Fallback an toàn khi thiếu key/lỗi
-        - Che giấu Credentials & Secrets
-        """
-    )
-    if st.button("Xóa hội thoại", use_container_width=True):
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": "Chào bạn! Hãy chọn một tình huống mẫu hoặc nhập câu hỏi để trợ lý phân loại ý định.",
-                "result": None,
-            }
-        ]
-        st.rerun()
-
-st.markdown('<div class="eyebrow">Discord learner assistant · CP3</div>', unsafe_allow_html=True)
-st.markdown('<h1 class="hero-title">Hiểu đúng ý định.<br/>Phản hồi đúng mức.</h1>', unsafe_allow_html=True)
-
-if api_key:
-    st.markdown(
-        f"""
-        <div class="status-badge badge-ai">
-          <span class="status-dot dot-ai"></span> CP3 · AI thật đang kết nối: <code>{active_model}</code>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+render_sidebar()
+if st.session_state.navigation == "Learner":
+    render_learner_view()
 else:
-    st.markdown(
-        """
-        <div class="status-badge badge-fallback">
-          <span class="status-dot dot-fallback"></span> CP3 · Chế độ Safety Fallback (Chưa cấu hình MODEL_API_KEY)
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-metric_columns = st.columns(3)
-with metric_columns[0]:
-    st.markdown(
-        '<div class="route-card"><div class="route-kicker">Input</div><div class="route-value">Tin nhắn học viên</div><div class="route-note">Nhập tự do hoặc chọn case mẫu.</div></div>',
-        unsafe_allow_html=True,
-    )
-with metric_columns[1]:
-    st.markdown(
-        f'<div class="route-card"><div class="route-kicker">Quyết định AI</div><div class="route-value">Model LLM Real Call</div><div class="route-note">{active_model if api_key else "Safety Fallback Engine"}</div></div>',
-        unsafe_allow_html=True,
-    )
-with metric_columns[2]:
-    st.markdown(
-        '<div class="route-card"><div class="route-kicker">Outcome</div><div class="route-value">Contract Validator</div><div class="route-note">Lọc secret + Định tuyến an toàn.</div></div>',
-        unsafe_allow_html=True,
-    )
-
-st.markdown(
-    '<div class="safe-note">Nguyên tắc CP3: Mọi logistics chưa có nguồn chính thức sẽ bị discard câu trả lời của AI và chuyển TA để bảo vệ học viên.</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown("### Kênh `#tro-ly-hoc-vien`")
-for item in st.session_state.messages:
-    avatar = "🧑‍🎓" if item["role"] == "user" else "🧭"
-    with st.chat_message(item["role"], avatar=avatar):
-        st.write(item["content"])
-        if item.get("result"):
-            render_decision(item["result"])
-
-if prompt := st.chat_input("Nhập câu hỏi của học viên…"):
-    submit_message(prompt)
-    st.rerun()
+    render_labcoach_view()

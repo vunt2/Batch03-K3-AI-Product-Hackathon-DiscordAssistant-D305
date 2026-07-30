@@ -1,0 +1,89 @@
+message_id,image_id,thread_id,message_order,speaker_role,text_redacted,message_type,reply_to_message_id,topic,contains_course_fact,authority_level,ocr_confidence,review_status,notes
+MSG-001-01,IMG-001,THREAD-001,1,unknown,Hướng dẫn kết nối các Wi-Fi của trường: [QR_CODE_REDACTED],announcement,,technical_setup,true,unknown,0.94,needs_review,QR payload intentionally not decoded.
+MSG-002-01,IMG-002,THREAD-002,1,learner,Em muốn xin nghỉ buổi chiều nay thì thủ tục như thế nào?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-003-01,IMG-003,THREAD-003,1,labcoach,Đúng rồi em.,answer,,other,true,labcoach_candidate,0.96,needs_review,Reply target is not clear; do not pair automatically.
+MSG-003-02,IMG-003,THREAD-003,2,learner,Em muốn xin nghỉ buổi chiều nay thì thủ tục như thế nào?,question,,course_policy,false,unknown,0.98,needs_review,Visible below an unrelated/unclear reply.
+MSG-004-01,IMG-004,THREAD-004,1,learner,Đến bước xác thực lời mời GitHub Org nhưng kiểm tra điện thoại và máy tính đều không thấy lời mời; cần làm gì?,question,,github,false,unknown,0.98,needs_review,
+MSG-005-01,IMG-005,THREAD-005,1,learner,Đã qua bước vào GitHub Org và hoàn tất hồ sơ nhưng không thấy organization trong GitHub Settings; đây là bình thường hay lỗi?,question,,github,false,unknown,0.98,needs_review,
+MSG-006-01,IMG-006,THREAD-006,1,learner,Làm sao đăng nhập lại khi bấm Git mà hệ thống báo lỗi?,question,,technical_setup,false,unknown,0.91,needs_review,Embedded error screenshot is partially cropped.
+MSG-007-01,IMG-007,THREAD-007,1,learner,Thành viên khóa 3 và khóa 4 có thể chung nhóm không?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-008-01,IMG-008,THREAD-008,1,learner,Có ai không xem được slide như thế này không?,question,,technical_setup,false,unknown,0.93,needs_review,
+MSG-009-01,IMG-009,THREAD-009,1,official_announcement,"Người chưa được mời vào GitHub Org sẽ được chuyển qua bước hoàn tất hồ sơ; sau khi tham gia team và lập đội, hệ thống sẽ gửi lời mời vào project qua email.",announcement,,github,true,official,0.98,needs_review,
+MSG-010-01,IMG-010,THREAD-010,1,learner,Weekly submit gồm những gì?,question,,submission,false,unknown,0.98,needs_review,
+MSG-010-02,IMG-010,THREAD-010,2,unknown,"Lệnh /weekly submit mở form gồm: tiến độ, khó khăn, kế hoạch và link đính kèm. Mỗi thành viên được cộng XP khi nộp thành công; cần nộp trước buổi Coaching.",answer,MSG-010-01,submission,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-011-01,IMG-011,THREAD-011,1,learner,Làm sao để gửi ticket?,question,,technical_setup,false,unknown,0.98,needs_review,
+MSG-011-02,IMG-011,THREAD-011,2,unknown,"Gõ /ticket create, chọn loại ticket, điền tiêu đề và mô tả chi tiết trong kênh ticket riêng.",answer,MSG-011-01,technical_setup,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-012-01,IMG-012,THREAD-012,1,learner,Bình thường mấy giờ nhà ăn hết cơm?,question,,schedule,false,unknown,0.98,needs_review,
+MSG-012-02,IMG-012,THREAD-012,2,unknown,Không có thông tin chính xác về giờ của nhà ăn; hãy hỏi thành viên khác hoặc bộ phận quản lý khu vực.,answer,MSG-012-01,schedule,false,unknown,0.98,needs_review,"Safe out-of-scope response, not a course fact."
+MSG-013-01,IMG-013,THREAD-013,1,learner,Weekly report có cần file theo format không?,question,,submission,false,unknown,0.98,needs_review,
+MSG-013-02,IMG-013,THREAD-013,2,unknown,Không cần file Word/PDF riêng. Dùng /weekly submit; có thể sửa bằng /weekly update và xem lại bằng /weekly history. Cần hoàn thành trước buổi Coaching.,answer,MSG-013-01,submission,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-014-01,IMG-014,THREAD-014,1,learner,Khóa 3 có được ghép đội với khóa 4 không?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-015-01,IMG-015,THREAD-015,1,learner,Cách submit AI log?,question,,api_key,false,unknown,0.98,needs_review,
+MSG-015-02,IMG-015,THREAD-015,2,unknown,"Tạo API key tại [LINK_REDACTED], clone repo của team trong GitHub Org, làm theo README và kiểm tra trạng thái AI log sau khi push code.",answer,MSG-015-01,api_key,true,unknown,0.98,needs_review,Course URL redacted; automated assistant response requires verification.
+MSG-016-01,IMG-016,THREAD-016,1,learner,Đã hoàn tất hồ sơ nhưng vẫn chưa thấy lời mời organization trên GitHub.,question,,github,false,unknown,0.98,needs_review,
+MSG-017-01,IMG-017,THREAD-017,1,learner,Mã nhóm là gì?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-017-02,IMG-017,THREAD-017,2,unknown,Có thể xem tên group ở cột bên trái; sau thông báo chính thức về Mentor sẽ được phân vào nhóm của Mentor.,answer,MSG-017-01,team_workflow,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-018-01,IMG-018,THREAD-018,1,learner,Khóa 3 và khóa 4 học cùng được không?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-019-01,IMG-019,THREAD-019,1,learner,Đã hoàn tất hồ sơ nhưng chưa thấy lời mời GitHub organization; người hỏi thuộc khóa 4.,question,,github,false,unknown,0.98,needs_review,
+MSG-020-01,IMG-020,THREAD-020,1,learner,Thời hạn tạo team là đến bao giờ?,question,,deadline,false,unknown,0.98,needs_review,
+MSG-021-01,IMG-021,THREAD-021,1,labcoach,Các bạn tên màu trắng cần verify để nhận role.,announcement,,course_policy,true,labcoach_candidate,0.98,needs_review,
+MSG-022-01,IMG-022,THREAD-022,1,learner,Lệnh báo cáo tuần là gì?,question,,submission,false,unknown,0.98,needs_review,
+MSG-022-02,IMG-022,THREAD-022,2,unknown,Weekly report chỉ cần một đại diện nộp cho cả team.,answer,MSG-022-01,submission,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-023-01,IMG-023,THREAD-023,1,learner,Đã đăng nhập đúng tài khoản nhưng vào GitHub organizations không thấy lời mời.,question,,github,false,unknown,0.98,needs_review,
+MSG-024-01,IMG-024,THREAD-024,1,learner,"Các buổi tối có phải luôn hoạt động online không, và học viên có được thông báo trước không?",question,,schedule,false,unknown,0.98,needs_review,
+MSG-025-01,IMG-025,THREAD-025,1,learner,Đăng ký đề tài như thế nào?,question,,checkpoint,false,unknown,0.98,needs_review,
+MSG-025-02,IMG-025,THREAD-025,2,unknown,Gõ /exam pick để chọn đề tài.,answer,MSG-025-01,checkpoint,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-026-01,IMG-026,THREAD-026,1,learner,Đã hoàn thành đủ sáu bước checklist nhưng vẫn chưa thấy lời mời GitHub Org.,question,,github,false,unknown,0.98,needs_review,
+MSG-027-01,IMG-027,THREAD-027,1,learner,Cách đổi đề tài đã chọn sang đề tài khác?,question,,checkpoint,false,unknown,0.98,needs_review,
+MSG-027-02,IMG-027,THREAD-027,2,unknown,"Nếu có conflict, có thể tạo ticket yêu cầu đổi đề tài trước thời hạn.",answer,MSG-027-01,checkpoint,true,unknown,0.98,needs_review,Automated assistant response; deadline/policy requires verification.
+MSG-028-01,IMG-028,THREAD-028,1,learner,Đã làm xong nhưng GitHub vẫn báo chưa là thành viên organization.,question,,github,false,unknown,0.98,needs_review,
+MSG-029-01,IMG-029,THREAD-029,1,learner,Các trường trong weekly report gồm những gì?,question,,submission,false,unknown,0.98,needs_review,
+MSG-029-02,IMG-029,THREAD-029,2,unknown,Gõ /weekly submit để hiển thị gợi ý các thông tin cần nộp.,answer,MSG-029-01,submission,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-030-01,IMG-030,THREAD-030,1,learner,Deadline của weekly report là khi nào?,question,,deadline,false,unknown,0.98,needs_review,
+MSG-030-02,IMG-030,THREAD-030,2,unknown,Weekly cần nộp trước 12:00 trước các buổi Mentor Duty; các buổi này diễn ra tối thứ 4 và thứ 7 hằng tuần.,answer,MSG-030-01,deadline,true,unknown,0.98,needs_review,Volatile automated answer; requires official verification.
+MSG-031-01,IMG-031,THREAD-031,1,learner,"Khi tìm đội, thành viên khóa 3 và khóa 4 có thể cùng đội không?",question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-032-01,IMG-032,THREAD-032,1,learner,Tài khoản Discord đang dùng không cùng email đăng ký với chương trình có sao không?,question,,technical_setup,false,unknown,0.98,needs_review,
+MSG-033-01,IMG-033,THREAD-033,1,learner,Nhóm tối đa bốn người có thể gồm cả khóa 3 và khóa 4 không?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-034-01,IMG-034,THREAD-034,1,learner,Muốn xin nghỉ phép hôm nay thì liên hệ giảng viên nào?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-035-01,IMG-035,THREAD-035,1,learner,Làm sao để tăng XP?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-035-02,IMG-035,THREAD-035,2,unknown,"XP có thể đến từ daily, weekly, gate, workshop, hỗ trợ cộng đồng và showcase; mức XP khác nhau theo hoạt động.",answer,MSG-035-01,course_policy,true,unknown,0.98,needs_review,Automated assistant response; XP values omitted pending verification.
+MSG-036-01,IMG-036,THREAD-036,1,learner,Bận ngày khai giảng nên chưa nhận áo; có thể nhận bằng cách nào?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-037-01,IMG-037,THREAD-037,1,learner,Làm sao kiểm tra tình trạng điểm danh?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-037-02,IMG-037,THREAD-037,2,unknown,Workshop được điểm danh tự động khi đăng nhập Zoom bằng đúng email đăng ký và đặt tên đúng cú pháp.,answer,MSG-037-01,course_policy,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-037-03,IMG-037,THREAD-037,3,unknown,Chưa đủ thông tin để trả lời chính xác; cần Mod hỗ trợ.,follow_up,MSG-037-01,course_policy,false,unknown,0.98,needs_review,
+MSG-038-01,IMG-038,THREAD-038,1,labcoach,Cần xác nhận để lấy role; tham khảo lại quy trình trong file BTC đã gửi.,answer,,course_policy,true,labcoach_candidate,0.98,needs_review,
+MSG-039-01,IMG-039,THREAD-039,1,learner,Zoom tối nay dùng email cá nhân hay email trường?,question,,technical_setup,false,unknown,0.98,needs_review,
+MSG-040-01,IMG-040,THREAD-040,1,learner,Chưa nhận được lời mời GitHub Org có phải vì chưa có đội không?,question,,github,false,unknown,0.98,needs_review,
+MSG-041-01,IMG-041,THREAD-041,1,learner,Đặt tên Zoom tối nay cần mã nhóm và mã đội; xem mã nhóm ở đâu?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-042-01,IMG-042,THREAD-042,1,official_announcement,"Nếu buổi đầu chưa có mã nhóm/team, có thể dùng cú pháp TÊN - 5 chữ số cuối mã học viên.",announcement,,team_workflow,true,official,0.98,needs_review,Format is volatile and must be checked against current announcement.
+MSG-043-01,IMG-043,THREAD-043,1,learner,Mã team đã rõ nhưng chưa biết mã nhóm để đặt tên Zoom.,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-044-01,IMG-044,THREAD-044,1,learner,Viết daily bị nhầm thì sửa như thế nào?,question,,submission,false,unknown,0.98,needs_review,
+MSG-044-02,IMG-044,THREAD-044,2,unknown,"Dùng /daily update để sửa daily; dùng /weekly update để sửa weekly. Nếu lỗi, mở ticket bằng /ticket create.",answer,MSG-044-01,submission,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-045-01,IMG-045,THREAD-045,1,labcoach,Yêu cầu đặt tên Zoom được ghi rõ trong kênh thông báo; cần đọc kỹ yêu cầu của BTC.,answer,,team_workflow,true,labcoach_candidate,0.98,needs_review,
+MSG-046-01,IMG-046,THREAD-046,1,learner,Nộp daily report ở đâu?,question,,submission,false,unknown,0.98,needs_review,
+MSG-046-02,IMG-046,THREAD-046,2,unknown,Nộp daily standup trong thread Thảo luận ở channel riêng của team và dùng lệnh /daily.,answer,MSG-046-01,submission,true,unknown,0.98,needs_review,Automated assistant response; authority requires review.
+MSG-047-01,IMG-047,THREAD-047,1,learner,"Có phải chỉ prompt qua API key của Phoenix mới có API log, còn dùng công cụ coding agent thì log không được lưu?",question,,api_key,false,unknown,0.98,needs_review,
+MSG-048-01,IMG-048,THREAD-048,1,learner,Bot làm được những gì?,question,,other,false,unknown,0.98,needs_review,
+MSG-048-02,IMG-048,THREAD-048,2,unknown,Bot chỉ có thông tin liên quan đến chương trình Build Phase.,answer,MSG-048-01,other,true,unknown,0.98,needs_review,Automated assistant scope statement.
+MSG-049-01,IMG-049,THREAD-049,1,learner,Dùng coding agent qua IDE thay vì terminal thì AI log có lấy được log không?,question,,api_key,false,unknown,0.98,needs_review,
+MSG-050-01,IMG-050,THREAD-GITHUB-050,1,learner,Đã xong bảy bước onboarding nhưng chưa nhận được lời mời GitHub Org.,question,,github,false,unknown,0.98,needs_review,
+MSG-051-01,IMG-051,THREAD-051,1,learner,Cần đạt cấp độ nào để showcase; cả đội hay chỉ người đạt cấp độ đó?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-052-01,IMG-052,THREAD-GITHUB-050,1,labcoach,Cần có team thì mới có lời mời organization; đồng thời cần lấy đủ role.,answer,MSG-050-01,github,true,labcoach_candidate,0.98,needs_review,
+MSG-053-01,IMG-053,THREAD-053,1,learner,Hôm nay có thông báo gì quan trọng?,question,,schedule,false,unknown,0.98,needs_review,
+MSG-053-02,IMG-053,THREAD-053,2,unknown,Tính năng này hiện chưa làm được.,answer,MSG-053-01,schedule,false,unknown,0.98,needs_review,
+MSG-054-01,IMG-054,THREAD-054,1,learner,Nhận role như thế nào?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-055-01,IMG-055,THREAD-055,1,learner,Thư viện có mở cuối tuần không; giờ mở và đóng cửa là mấy giờ?,question,,schedule,false,unknown,0.98,needs_review,
+MSG-055-02,IMG-055,THREAD-055,2,labcoach,Kỳ hè thường không mở cuối tuần. Ngày thường mở 08:45–17:15; phòng 24/7 mở xuyên tối và cuối tuần.,answer,MSG-055-01,schedule,true,labcoach_candidate,0.98,needs_review,Highly volatile location/schedule information.
+MSG-056-01,IMG-056,THREAD-056,1,learner,Nhóm ba người sau này có tự động được xếp thêm thành bốn người không?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-057-01,IMG-057,THREAD-057,1,labcoach,Người chưa lấy role cần lấy role để thấy các kênh khác.,announcement,,course_policy,true,labcoach_candidate,0.98,needs_review,
+MSG-058-01,IMG-058,THREAD-058,1,learner,Cần làm gì để hoàn thành rules?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-059-01,IMG-059,THREAD-059,1,learner,Hôm nay và ngày mai có chương trình gì?,question,,schedule,false,unknown,0.98,needs_review,
+MSG-060-01,IMG-060,THREAD-060,1,learner,Chương trình có hỗ trợ dấu mộc thực tập không; cần hoàn thành 6 hay 12 tuần?,question,,course_policy,false,unknown,0.98,needs_review,
+MSG-061-01,IMG-061,THREAD-061,1,learner,Chương trình có hỗ trợ dấu thực tập.,answer,,course_policy,true,learner_only,0.98,needs_review,Learner statement only; not trusted knowledge.
+MSG-062-01,IMG-062,THREAD-062,1,learner,Có thông tin các Mentor trong Mentor Duty không?,question,,schedule,false,unknown,0.98,needs_review,
+MSG-062-02,IMG-062,THREAD-062,2,unknown,"Chưa có danh sách tên Mentor cụ thể. Mỗi team có Mentor đồng hành; Mentor Duty diễn ra 20:00–22:00 tối thứ 4 và thứ 7, danh sách sẽ được BTC thông báo.",answer,MSG-062-01,schedule,true,unknown,0.98,needs_review,Automated and volatile schedule answer; requires verification.
+MSG-063-01,IMG-063,THREAD-063,1,learner,"Có nguồn nói standup 30 XP, import 10 XP, weekly 10 XP, GitHub 0 XP; thông tin này đúng không?",question,,course_policy,false,unknown,0.98,needs_review,
+MSG-063-02,IMG-063,THREAD-063,2,unknown,Cần Mod xác nhận để tránh thông tin chưa chính xác.,answer,MSG-063-01,course_policy,false,unknown,0.98,needs_review,
+MSG-064-01,IMG-064,THREAD-064,1,learner,Team random có dành cho những người chưa có team không?,question,,team_workflow,false,unknown,0.98,needs_review,
+MSG-065-01,IMG-065,THREAD-065,1,learner,Thời gian công bố đề tài là bao giờ?,question,,deadline,false,unknown,0.98,needs_review,
+MSG-065-02,IMG-065,THREAD-065,2,unknown,Ngân hàng đề tài đã được công bố; hạn chốt ghép đội/chọn đề tài là hết ngày 25/07. Hãy kiểm tra pinned messages trong kênh thông báo để lấy file.,answer,MSG-065-01,deadline,true,unknown,0.98,needs_review,"Automated, volatile deadline and source-location answer; requires verification."

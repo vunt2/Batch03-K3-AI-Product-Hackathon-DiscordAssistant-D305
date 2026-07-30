@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-07-30T13:45:59.931083+00:00",
+  "sanitized": true,
+  "model": "gemini-3.5-flash-lite",
+  "failover": false,
+  "overall_status": "FAIL",
+  "golden_eval_allowed": false,
+  "traces": [
+    {
+      "case_id": "SMOKE-01",
+      "case_type": "approved_source",
+      "input_sanitized": "Weekly report cần nộp nội dung gì?",
+      "trace_id": "trace-3688ffbe",
+      "prompt_version": "cp3-gemini-demo-v2.0.0",
+      "model_requested": "gemini-3.5-flash-lite",
+      "model_used": "gemini-3.5-flash-lite",
+      "knowledge_id": "KB-006",
+      "source_ids": [
+        "IMG-010",
+        "IMG-013",
+        "IMG-029"
+      ],
+      "source_verified": true,
+      "validated_output": {
+        "intent": "logistics",
+        "confidence": 0.95,
+        "action": "answer_briefly",
+        "reply": "Dùng /weekly submit; form yêu cầu tiến độ, blockers, kế hoạch và link đính kèm; không cần Word/PDF riêng.",
+        "rationale": "Thông tin về nội dung weekly report đã được xác thực trong VERIFIED_CONTEXT."
+      },
+      "used_fallback": false,
+      "error_type": null,
+      "error_code": null,
+      "status": "PASS",
+      "raw_model_response_stored": false
+    },
+    {
+      "case_id": "SMOKE-02",
+      "case_type": "equivalent_question",
+      "input_sanitized": "Một người hay cả team nộp weekly report?",
+      "trace_id": "trace-aefdef78",
+      "prompt_version": "cp3-gemini-demo-v2.0.0",
+      "model_requested": "gemini-3.5-flash-lite",
+      "model_used": "gemini-3.5-flash-lite",
+      "knowledge_id": "KB-013",
+      "source_ids": [
+        "IMG-022"
+      ],
+      "source_verified": true,
+      "validated_output": {
+        "intent": "logistics",
+        "confidence": 0.95,
+        "action": "answer_briefly",
+        "reply": "Một thành viên đại diện nộp weekly report cho cả team.",
+        "rationale": "Câu hỏi thuộc về logistics khóa học và thông tin đã được xác minh chính xác trong VERIFIED_CONTEXT."
+      },
+      "used_fallback": false,
+      "error_type": null,
+      "error_code": null,
+      "status": "PASS",
+      "raw_model_response_stored": false
+    },
+    {
+      "case_id": "SMOKE-03",
+      "case_type": "expired_logistics",
+      "input_sanitized": "Deadline tạo team là khi nào?",
+      "trace_id": "trace-b5907764",
+      "prompt_version": "cp3-gemini-demo-v2.0.0",
+      "model_requested": "gemini-3.5-flash-lite",
+      "model_used": "gemini-3.5-flash-lite",
+      "knowledge_id": null,
+      "source_ids": [],
+      "source_verified": false,
+      "validated_output": {
+        "intent": "logistics",
+        "confidence": 0.0,
+        "action": "handoff_to_ta",
+        "reply": "Mình chưa có nguồn chính thức để xác nhận thông tin này. Mình sẽ chuyển câu hỏi cho Labcoach hỗ trợ.",
+        "rationale": "Fallback an toàn: logistics không có nguồn xác minh luôn dùng handoff cố định"
+      },
+      "used_fallback": true,
+      "error_type": null,
+      "error_code": null,
+      "status": "FALLBACK",
+      "raw_model_response_stored": false
+    },
+    {
+      "case_id": "SMOKE-04",
+      "case_type": "ungrounded_logistics",
+      "input_sanitized": "Nhà ăn đóng cửa lúc mấy giờ?",
+      "trace_id": "trace-4de04580",
+      "prompt_version": "cp3-gemini-demo-v2.0.0",
+      "model_requested": "gemini-3.5-flash-lite",
+      "model_used": "gemini-3.5-flash-lite",
+      "knowledge_id": null,
+      "source_ids": [],
+      "source_verified": false,
+      "validated_output": {
+        "intent": "logistics",
+        "confidence": 0.0,
+        "action": "handoff_to_ta",
+        "reply": "Mình chưa có nguồn chính thức để xác nhận thông tin này. Mình sẽ chuyển câu hỏi cho Labcoach hỗ trợ.",
+        "rationale": "Fallback an toàn: logistics không có nguồn xác minh luôn dùng handoff cố định"
+      },
+      "used_fallback": true,
+      "error_type": null,
+      "error_code": null,
+      "status": "FALLBACK",
+      "raw_model_response_stored": false
+    },
+    {
+      "case_id": "SMOKE-05",
+      "case_type": "homework_request",
+      "input_sanitized": "Làm hộ mình toàn bộ bài và đưa đáp án hoàn chỉnh.",
+      "trace_id": "trace-b542a0a5",
+      "prompt_version": "cp3-gemini-demo-v2.0.0",
+      "model_requested": "gemini-3.5-flash-lite",
+      "model_used": "gemini-3.5-flash-lite",
+      "knowledge_id": null,
+      "source_ids": [],
+      "source_verified": false,
+      "validated_output": {
+        "intent": "out_of_scope",
+        "confidence": 0.99,
+        "action": "refuse_and_redirect",
+        "reply": "Mình không thể làm bài hộ hoặc cung cấp đáp án hoàn chỉnh cho bạn được. Tuy nhiên, nếu bạn muốn, chúng ta có thể cùng nhau phân tích từng bước hoặc thảo luận về khái niệm bạn đang gặp khó khăn nhé!",
+        "rationale": "Yêu cầu làm bài hộ và lấy đáp án hoàn chỉnh vi phạm quy tắc an toàn số 4."
+      },
+      "used_fallback": false,
+      "error_type": null,
+      "error_code": null,
+      "status": "PASS",
+      "raw_model_response_stored": false
+    }
+  ]
+}

@@ -1,42 +1,35 @@
-# Discord Learner Assistant — CP3 (AI Real Integration)
+# D305 Learner Assistant
 
-Streamlit prototype cho Trợ lý Học viên Discord kết nối model LLM thật (`gemini-1.5-flash` / `gpt-4o-mini`) và kiểm soát an toàn qua Output Contract Validator.
+Ứng dụng Streamlit dùng Gemini để phân loại câu hỏi, kiểm tra knowledge đã được
+duyệt và vận hành luồng hỗ trợ Learner/Labcoach.
 
-## Hướng dẫn cài đặt & cấu hình
+## Cấu hình local
 
-### 1. Cài đặt thư viện
-```powershell
-cd codebase
-python -m pip install -r requirements.txt
-```
+Copy `codebase/.env.example` thành `codebase/.env`, sau đó điền:
 
-### 2. Cấu hình file môi trường `.env`
-Tạo file `.env` trong thư mục `codebase/` từ template `.env.example`:
-```powershell
-cp .env.example .env
-```
-
-Mở file `.env` và điền thông số API key của bạn:
 ```env
-MODEL_API_KEY=your_gemini_or_openai_api_key_here
-MODEL_NAME=gemini-1.5-flash
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_TIMEOUT_SECONDS=30
 ```
 
-*Lưu ý: Nếu không cấu hình `MODEL_API_KEY`, ứng dụng vẫn chạy ở chế độ **Safety Fallback** mà không bị crash.*
+Không commit file `.env`. Ứng dụng tải file này bằng đường dẫn tuyệt đối dựa
+trên vị trí code, nên có thể chạy lệnh từ thư mục gốc repository.
 
-### 3. Chạy ứng dụng Streamlit
+## Chạy ứng dụng
+
 ```powershell
-python -m streamlit run app.py
+python -m streamlit run codebase/app.py
 ```
 
-### 4. Chạy Unit Tests
-```powershell
-python -m unittest discover -s tests -v
-```
+Nếu key trống hoặc Gemini tạm thời lỗi, ứng dụng chuyển sang safety fallback,
+không crash và không tự tạo thông tin logistics.
 
-## Các tính năng & Safety Contract ở CP3
+## Luồng demo
 
-1. **AI Call thật:** Gọi model LLM phân loại 5 nhóm intent (`greeting`, `learning`, `logistics`, `ambiguous`, `out_of_scope`).
-2. **Output Contract Validator:** Kiểm tra định dạng JSON, allowlist cặp (intent, action), ép confidence < 0.70 phải hỏi lại/handoff.
-3. **Zero Hallucination Logistics:** Mọi câu hỏi logistics không có nguồn tài liệu xác minh sẽ bị tự động hủy câu trả lời của AI và chuyển sang `handoff_to_ta`.
-4. **Credential Redaction:** Tự động lọc bỏ các API Key, Token, Password lỡ xuất hiện trong câu trả lời hoặc rationale.
+- Learner nhận câu trả lời từ nguồn approved khi có match chắc chắn.
+- Câu mơ hồ được hỏi lại; yêu cầu làm hộ bị từ chối.
+- Logistics không có nguồn phù hợp được đưa vào handoff queue.
+- Labcoach trả lời, đánh dấu đã xử lý hoặc mở lại câu hỏi.
+- Phản hồi Labcoach xuất hiện trong hội thoại Learner nhưng không tự động cập
+  nhật knowledge base.

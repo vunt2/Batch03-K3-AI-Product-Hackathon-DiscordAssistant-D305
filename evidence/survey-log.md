@@ -1,5 +1,11 @@
 # Log Khảo sát Học viên (Survey Log — Standard A)
 
+> **UNVERIFIED / legacy draft:** Claim 28 người, các mã HV, quote và chỉ số
+> 20/28 bên dưới không có response-level artifact đủ để audit trong repository.
+> Không dùng file này làm evidence chính thức. Bộ dữ liệu có thể truy vết hiện
+> có tại `evidence/survey/` gồm 20 response (18 learner, 2 TA), và eligibility
+> ngoài team vẫn chưa được xác minh.
+
 - **Cỡ mẫu:** $n = 28$ học viên ngoài nhóm D305.
 - **Thời gian thu thập:** Ngày 1 Hackathon (10:00 - 16:00).
 - **Phương thức:** Khảo sát trực tiếp tại zone lớp học và qua kênh chat Discord.

@@ -14,18 +14,17 @@ VALID_INTENTS: Final[frozenset[str]] = frozenset(
 VALID_ACTIONS: Final[frozenset[str]] = frozenset(
     {
         "answer_briefly",
-        "answer_with_guidance",
         "ask_clarifying_question",
         "handoff_to_ta",
-        "decline_and_redirect",
+        "refuse_and_redirect",
     }
 )
 EXPECTED_ACTIONS_BY_INTENT: Final[dict[str, frozenset[str]]] = {
     "greeting": frozenset({"answer_briefly"}),
-    "learning": frozenset({"answer_with_guidance"}),
+    "learning": frozenset({"answer_briefly"}),
     "logistics": frozenset({"answer_briefly", "handoff_to_ta"}),
     "ambiguous": frozenset({"ask_clarifying_question"}),
-    "out_of_scope": frozenset({"decline_and_redirect"}),
+    "out_of_scope": frozenset({"refuse_and_redirect"}),
 }
 REQUIRED_FIELDS: Final[frozenset[str]] = frozenset(
     {"intent", "confidence", "action", "reply", "rationale"}
@@ -36,10 +35,9 @@ LOW_CONFIDENCE_ACTIONS: Final[frozenset[str]] = frozenset(
 )
 SAFE_LOGISTICS_REPLY: Final[str] = (
     "Mình chưa có nguồn chính thức để xác nhận thông tin này. "
-    "Mình sẽ chuyển câu hỏi cho TA hỗ trợ."
+    "Mình sẽ chuyển câu hỏi cho Labcoach hỗ trợ."
 )
 
-_OPENAI_KEY_PATTERN = re.compile(r"\bsk-[A-Za-z0-9_-]{8,}\b")
 _GOOGLE_KEY_PATTERN = re.compile(r"\bAIza[A-Za-z0-9_-]{12,}\b")
 _BEARER_TOKEN_PATTERN = re.compile(
     r"\bBearer\s+[A-Za-z0-9._~+/=-]{8,}",
@@ -95,7 +93,6 @@ def redact_sensitive_text(text: str) -> str:
         lambda match: f"{match.group('prefix')}[REDACTED]", text
     )
     for pattern in (
-        _OPENAI_KEY_PATTERN,
         _GOOGLE_KEY_PATTERN,
         _BEARER_TOKEN_PATTERN,
         _DISCORD_TOKEN_PATTERN,
@@ -165,6 +162,14 @@ def validate_model_output(
 
     if is_logistics and not has_verified_logistics_source:
         # Never retain model-authored logistics text without an approved source.
+        if action == "handoff_to_ta":
+            return {
+                "intent": "logistics",
+                "confidence": float(confidence),
+                "action": "handoff_to_ta",
+                "reply": SAFE_LOGISTICS_REPLY,
+                "rationale": redact_sensitive_text(rationale.strip()),
+            }
         return _safe_fallback(
             "logistics không có nguồn xác minh luôn dùng handoff cố định",
             logistics=True,

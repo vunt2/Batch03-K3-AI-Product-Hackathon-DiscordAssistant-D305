@@ -4,3 +4,6 @@ node_modules/
 __pycache__/
 *.py[cod]
 .streamlit/secrets.toml
+Khảo sát AI Agent hỗ trợ học tập trên Discord (Câu trả lời) - Câu trả lời biểu mẫu 1.csv
+data/raw/
+data/**/local-file-map.csv

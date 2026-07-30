@@ -1,30 +1,26 @@
-"""CP3 Real LLM Intent Classification Engine with Safety Contract Integration.
-
-Replaces the CP2 rule-based mock engine with real model calls via model_client.py,
-prompts.py, and output_contract.py while maintaining strict fallback policies.
-"""
+"""Gemini intent routing with approved-source metadata and safe fallbacks."""
 
 from __future__ import annotations
 
-import os
+import re
 import uuid
 from typing import TypedDict
 
-from dotenv import load_dotenv
-
+from knowledge_base import (
+    KnowledgeMatch,
+    knowledge_match_to_context,
+    retrieve_approved_match,
+)
 from model_client import (
     ModelClientError,
     ModelKeyMissingError,
-    ModelResponseError,
+    ModelRateLimitError,
     ModelTimeoutError,
-    call_model_api,
-    get_model_config,
+    call_gemini_api,
+    get_gemini_config,
 )
 from output_contract import validate_model_output
 from prompts import build_system_prompt
-
-# Load environment variables from .env if present
-load_dotenv()
 
 
 class IntentResult(TypedDict):
@@ -38,132 +34,260 @@ class IntentResult(TypedDict):
     is_fallback: bool
     model_name: str
     trace_id: str
+    model_requested: str
+    model_used: str
+    used_fallback: bool
+    error_type: str
+    error_code: int | None
+    knowledge_id: str | None
+    source_ids: list[str]
+    topic: str | None
+    source_verified: bool
 
 
 INTENT_LABELS = {
     "greeting": "Chào hỏi",
     "learning": "Hỏi bài",
-    "logistics": "Logistics",
-    "ambiguous": "Thiếu thông tin",
+    "logistics": "Thông tin khóa học",
+    "ambiguous": "Cần làm rõ",
     "out_of_scope": "Ngoài phạm vi",
 }
 
 ACTION_LABELS = {
-    "answer_briefly": "Trả lời ngắn",
-    "answer_with_guidance": "Hướng dẫn học",
+    "answer_briefly": "Trả lời",
     "ask_clarifying_question": "Hỏi lại",
-    "handoff_to_ta": "Chuyển TA",
-    "decline_and_redirect": "Từ chối + định hướng",
+    "handoff_to_ta": "Chuyển Labcoach",
+    "refuse_and_redirect": "Từ chối và định hướng",
 }
 
+LOGISTICS_PATTERN = re.compile(
+    r"\b(deadline|hạn|lịch|mấy giờ|khi nào|nộp|submit|weekly|daily|"
+    r"mentor duty|team|zoom|discord|github|xp|showcase|ticket)\b",
+    re.IGNORECASE,
+)
+HOMEWORK_PATTERN = re.compile(
+    r"\b(làm hộ|làm giúp toàn bộ|đáp án hoàn chỉnh|giải hộ|viết hộ|"
+    r"chép đáp án|do my homework)\b",
+    re.IGNORECASE,
+)
 
-def classify_message(
-    message: str,
-    verified_context: str | None = None,
-    use_mock: bool = False,
-) -> IntentResult:
-    """Classify a learner message using real LLM API with safety contract validation."""
+
+def classify_message(message: str, *, use_mock: bool = False) -> IntentResult:
+    """Route one learner message and return UI-safe structured metadata."""
+
     trace_id = f"trace-{uuid.uuid4().hex[:8]}"
     clean_message = message.strip()
+    config = get_gemini_config()
+    metadata = config.public_metadata()
+    knowledge_match = (
+        retrieve_approved_match(clean_message) if clean_message else None
+    )
 
     if not clean_message:
         return _result(
             intent="ambiguous",
             confidence=1.0,
             action="ask_clarifying_question",
-            reply="Bạn muốn hỏi về bài học, deadline hay cách nộp bài? Hãy cho mình thêm một chút thông tin nhé.",
+            reply="Bạn muốn hỏi về nội dung nào? Hãy cho mình thêm một chút thông tin nhé.",
             rationale="Tin nhắn chưa có nội dung để phân loại.",
             is_fallback=True,
-            model_name="Validation Rule",
             trace_id=trace_id,
+            metadata=metadata,
+            knowledge_match=None,
         )
 
-    api_key, model_name = get_model_config()
+    if use_mock or not config.is_configured:
+        return _safe_local_fallback(
+            clean_message,
+            trace_id,
+            metadata,
+            knowledge_match,
+            error_type="missing_api_key" if not config.is_configured else "",
+        )
 
-    # Fallback if API key is missing or mock mode requested
-    if use_mock or not api_key:
-        return _handle_missing_key_fallback(clean_message, model_name or "Mock Engine", trace_id)
-
-    # Build prompt with verified context
-    system_prompt = build_system_prompt(verified_context)
-
+    verified_context = knowledge_match_to_context(knowledge_match)
     try:
-        raw_output = call_model_api(system_prompt, clean_message)
+        raw_output = call_gemini_api(
+            build_system_prompt(verified_context),
+            clean_message,
+            config=config,
+            metadata_out=metadata,
+        )
         validated = validate_model_output(
             raw_output,
-            has_verified_logistics_source=bool(verified_context),
+            has_verified_logistics_source=bool(knowledge_match),
         )
+        is_contract_fallback = validated["rationale"].startswith(
+            "Fallback an toàn:"
+        )
+        if is_contract_fallback:
+            metadata["used_fallback"] = True
 
-        is_fallback_used = "Fallback" in validated.get("rationale", "")
+        reply = validated["reply"]
+        if (
+            knowledge_match
+            and validated["intent"] == "logistics"
+            and validated["action"] == "answer_briefly"
+        ):
+            # Logistics displayed to learners must be exact approved knowledge,
+            # never a model-authored paraphrase with extra claims.
+            reply = knowledge_match["answer"]
+
         return _result(
             intent=validated["intent"],
             confidence=validated["confidence"],
             action=validated["action"],
-            reply=validated["reply"],
+            reply=reply,
             rationale=validated["rationale"],
-            is_fallback=is_fallback_used,
-            model_name=model_name,
+            is_fallback=is_contract_fallback,
             trace_id=trace_id,
+            metadata=metadata,
+            knowledge_match=knowledge_match,
         )
-
     except ModelKeyMissingError:
-        return _handle_missing_key_fallback(clean_message, model_name, trace_id)
-    except ModelTimeoutError as err:
-        return _result(
-            intent="ambiguous",
-            confidence=0.0,
-            action="ask_clarifying_question",
-            reply="Hệ thống phản hồi quá thời gian cho phép. Bạn có thể thử lại hoặc gửi thông tin cụ thể hơn.",
-            rationale=f"Model Timeout: {err}",
-            is_fallback=True,
-            model_name=model_name,
-            trace_id=trace_id,
+        return _safe_local_fallback(
+            clean_message,
+            trace_id,
+            metadata,
+            knowledge_match,
+            error_type="missing_api_key",
         )
-    except (ModelResponseError, ModelClientError, Exception) as err:
-        return _result(
-            intent="ambiguous",
-            confidence=0.0,
-            action="ask_clarifying_question",
-            reply="Trợ lý đang gặp sự cố kết nối với AI. Bạn có thể gửi lại câu hỏi hoặc yêu cầu TA hỗ trợ.",
-            rationale=f"API/Network Error: {err}",
-            is_fallback=True,
-            model_name=model_name,
-            trace_id=trace_id,
+    except ModelRateLimitError as error:
+        return _safe_local_fallback(
+            clean_message,
+            trace_id,
+            metadata,
+            knowledge_match,
+            error_type=error.error_type,
+            error_code=error.status_code,
+            friendly_reason="Gemini đang bận. Trợ lý đã chuyển sang chế độ an toàn.",
+        )
+    except ModelTimeoutError as error:
+        return _safe_local_fallback(
+            clean_message,
+            trace_id,
+            metadata,
+            knowledge_match,
+            error_type=error.error_type,
+            error_code=error.status_code,
+            friendly_reason="Gemini phản hồi chậm. Trợ lý đã chuyển sang chế độ an toàn.",
+        )
+    except ModelClientError as error:
+        return _safe_local_fallback(
+            clean_message,
+            trace_id,
+            metadata,
+            knowledge_match,
+            error_type=error.error_type,
+            error_code=error.status_code,
+            friendly_reason="Gemini tạm thời chưa sẵn sàng. Trợ lý đã chuyển sang chế độ an toàn.",
+        )
+    except Exception:
+        return _safe_local_fallback(
+            clean_message,
+            trace_id,
+            metadata,
+            knowledge_match,
+            error_type="unexpected_error",
+            friendly_reason="Trợ lý gặp sự cố tạm thời và đã chuyển sang chế độ an toàn.",
         )
 
 
-def _handle_missing_key_fallback(
+def _safe_local_fallback(
     message: str,
-    model_name: str,
     trace_id: str,
+    metadata: dict[str, object],
+    knowledge_match: KnowledgeMatch | None,
+    *,
+    error_type: str = "",
+    error_code: int | None = None,
+    friendly_reason: str = "Gemini chưa được cấu hình. Trợ lý đang dùng chế độ an toàn.",
 ) -> IntentResult:
-    """Return graceful fallback when MODEL_API_KEY is not configured."""
+    metadata["used_fallback"] = True
+
+    if knowledge_match:
+        return _result(
+            intent="logistics",
+            confidence=1.0,
+            action="answer_briefly",
+            reply=knowledge_match["answer"],
+            rationale=(
+                f"{friendly_reason} Câu trả lời được lấy nguyên văn từ nguồn đã xác minh."
+            ),
+            is_fallback=True,
+            trace_id=trace_id,
+            metadata=metadata,
+            knowledge_match=knowledge_match,
+            error_type=error_type,
+            error_code=error_code,
+        )
+    if HOMEWORK_PATTERN.search(message):
+        return _result(
+            intent="out_of_scope",
+            confidence=1.0,
+            action="refuse_and_redirect",
+            reply=(
+                "Mình không thể làm hộ hoặc cung cấp đáp án hoàn chỉnh. "
+                "Bạn hãy gửi phần đã làm và chỗ đang vướng, mình sẽ gợi ý từng bước."
+            ),
+            rationale=f"{friendly_reason} Yêu cầu làm hộ được từ chối an toàn.",
+            is_fallback=True,
+            trace_id=trace_id,
+            metadata=metadata,
+            knowledge_match=None,
+            error_type=error_type,
+            error_code=error_code,
+        )
+    if LOGISTICS_PATTERN.search(message):
+        return _result(
+            intent="logistics",
+            confidence=1.0,
+            action="handoff_to_ta",
+            reply=(
+                "Mình chưa có nguồn đã xác minh phù hợp với câu hỏi này. "
+                "Mình đã chuyển câu hỏi cho Labcoach hỗ trợ."
+            ),
+            rationale=f"{friendly_reason} Logistics không có nguồn phù hợp phải handoff.",
+            is_fallback=True,
+            trace_id=trace_id,
+            metadata=metadata,
+            knowledge_match=None,
+            error_type=error_type,
+            error_code=error_code,
+        )
     return _result(
         intent="ambiguous",
         confidence=0.0,
         action="ask_clarifying_question",
         reply=(
-            "Chưa cấu hình MODEL_API_KEY cho trợ lý AI. "
-            "Vui lòng thêm API Key vào file .env để kích hoạt AI thật. "
-            "Hiện tại hệ thống đang ở chế độ Safety Fallback."
+            "Mình chưa thể xử lý câu hỏi này ngay lúc này. "
+            "Bạn có thể mô tả rõ nội dung và điều bạn đang vướng không?"
         ),
-        rationale="Cảnh báo: Thiếu MODEL_API_KEY trong môi trường.",
+        rationale=f"{friendly_reason} Không đủ căn cứ để trả lời.",
         is_fallback=True,
-        model_name=f"{model_name} (Missing Key)",
         trace_id=trace_id,
+        metadata=metadata,
+        knowledge_match=None,
+        error_type=error_type,
+        error_code=error_code,
     )
 
 
 def _result(
+    *,
     intent: str,
     confidence: float,
     action: str,
     reply: str,
     rationale: str,
     is_fallback: bool,
-    model_name: str,
     trace_id: str,
+    metadata: dict[str, object],
+    knowledge_match: KnowledgeMatch | None,
+    error_type: str = "",
+    error_code: int | None = None,
 ) -> IntentResult:
+    model_used = str(metadata.get("model_used", "gemini"))
     return {
         "intent": intent,
         "label": INTENT_LABELS.get(intent, intent),
@@ -173,6 +297,21 @@ def _result(
         "reply": reply,
         "rationale": rationale,
         "is_fallback": is_fallback,
-        "model_name": model_name,
+        "model_name": model_used,
         "trace_id": trace_id,
+        "model_requested": str(metadata.get("model_requested", "gemini")),
+        "model_used": model_used,
+        "used_fallback": bool(metadata.get("used_fallback", is_fallback)),
+        "error_type": error_type,
+        "error_code": error_code,
+        "knowledge_id": (
+            knowledge_match["knowledge_id"] if knowledge_match else None
+        ),
+        "source_ids": (
+            list(knowledge_match["source_ids"]) if knowledge_match else []
+        ),
+        "topic": knowledge_match["topic"] if knowledge_match else None,
+        "source_verified": bool(
+            knowledge_match and knowledge_match["source_verified"]
+        ),
     }

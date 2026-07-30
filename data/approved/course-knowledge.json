@@ -1,0 +1,593 @@
+{
+  "schema_version": "1.0",
+  "entries": [
+    {
+      "id": "KB-002",
+      "topic": "github",
+      "canonical_question": "Không nhận được lời mời GitHub Org sau onboarding thì làm gì?",
+      "question_variants": [
+        "Đã xác thực nhưng không thấy lời mời GitHub Org.",
+        "Hoàn tất hồ sơ nhưng organization không xuất hiện.",
+        "Đã xong checklist/onboarding nhưng chưa nhận lời mời.",
+        "Không thấy GitHub organization dù dùng đúng tài khoản.",
+        "Chưa có team có ảnh hưởng lời mời Org không?"
+      ],
+      "answer": "Cần hoàn tất hồ sơ, có team và đủ role; lời mời vào project được gửi sau. Team phải xác minh lại quy trình hiện hành.",
+      "source_image_ids": [
+        "IMG-004",
+        "IMG-005",
+        "IMG-009",
+        "IMG-016",
+        "IMG-019",
+        "IMG-023",
+        "IMG-026",
+        "IMG-028",
+        "IMG-040",
+        "IMG-050",
+        "IMG-052"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-012",
+      "topic": "course_policy",
+      "canonical_question": "Làm sao nhận role để thấy các kênh?",
+      "question_variants": [
+        "Nhận role kiểu gì?",
+        "Cần làm gì để hoàn thành rules?",
+        "Tên màu trắng cần làm gì?",
+        "Chưa thấy kênh khác vì chưa có role?"
+      ],
+      "answer": "Cần hoàn thành bước xác nhận/verify theo hướng dẫn BTC để nhận role và thấy các kênh.",
+      "source_image_ids": [
+        "IMG-021",
+        "IMG-038",
+        "IMG-054",
+        "IMG-057",
+        "IMG-058"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-004",
+      "topic": "team_workflow",
+      "canonical_question": "Học viên khóa 3 và khóa 4 có được chung team không?",
+      "question_variants": [
+        "Khóa 3 và khóa 4 có thể chung nhóm không?",
+        "Khóa 3 có được ghép đội với khóa 4 không?",
+        "Khóa 3 và khóa 4 học cùng được không?",
+        "Hai khóa có thể cùng đội tối đa bốn người không?"
+      ],
+      "answer": "Học viên khóa 3 và khóa 4 được phép chung team.",
+      "source_image_ids": [
+        "IMG-007",
+        "IMG-014",
+        "IMG-018",
+        "IMG-031",
+        "IMG-033"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-010",
+      "topic": "team_workflow",
+      "canonical_question": "Xem mã nhóm hoặc mã team ở đâu?",
+      "question_variants": [
+        "Mã nhóm là gì?",
+        "Đặt tên Zoom cần mã nhóm thì xem ở đâu?",
+        "Đã biết mã team nhưng chưa biết mã nhóm."
+      ],
+      "answer": "Có thể xem tên group ở cột trái; nếu buổi đầu chưa có mã thì announcement cho phép dùng tên và năm chữ số cuối mã học viên.",
+      "source_image_ids": [
+        "IMG-017",
+        "IMG-041",
+        "IMG-042",
+        "IMG-043",
+        "IMG-045"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-001",
+      "topic": "course_policy",
+      "canonical_question": "Làm thủ tục xin nghỉ như thế nào?",
+      "question_variants": [
+        "Muốn xin nghỉ buổi chiều thì làm thủ tục gì?",
+        "Xin nghỉ phép hôm nay thì liên hệ ai?",
+        "Muốn xin nghỉ buổi chiều thì thủ tục thế nào?"
+      ],
+      "answer": "Nếu cần xin nghỉ, gửi email đến địa chỉ hỗ trợ chính thức của chương trình.",
+      "source_image_ids": [
+        "IMG-002",
+        "IMG-003",
+        "IMG-034"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-014",
+      "topic": "schedule",
+      "canonical_question": "Các buổi tối có học online và được báo trước không?",
+      "question_variants": [
+        "Buổi tối có luôn hoạt động online không?",
+        "Hôm nay và ngày mai có chương trình gì?",
+        "Hôm nay có thông báo quan trọng nào?"
+      ],
+      "answer": "Các buổi tối bắt đầu lúc 20:00. Theo kế hoạch có hai workshop, hai office hour và hai mentor duty; lịch cụ thể từng tuần được thông báo trên kênh announcement.",
+      "source_image_ids": [
+        "IMG-024",
+        "IMG-053",
+        "IMG-059"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-006",
+      "topic": "submission",
+      "canonical_question": "Weekly report cần nộp nội dung và định dạng gì?",
+      "question_variants": [
+        "Weekly submit gồm những gì?",
+        "Weekly report có cần file Word/PDF không?",
+        "Các trường trong weekly report gồm gì?"
+      ],
+      "answer": "Dùng /weekly submit; form yêu cầu tiến độ, blockers, kế hoạch và link đính kèm; không cần Word/PDF riêng.",
+      "source_image_ids": [
+        "IMG-010",
+        "IMG-013",
+        "IMG-029"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-019",
+      "topic": "course_policy",
+      "canonical_question": "Làm sao tăng XP?",
+      "question_variants": [
+        "Làm sao để tăng XP?",
+        "Các mức XP của standup/import/weekly/GitHub có đúng không?"
+      ],
+      "answer": "Các cách nhận XP:\n- /daily: +5 XP.\n- /weekly submit: một người đại diện nộp, mỗi thành viên team nhận +10 XP.\n- /gate submit: team nhận tới +100 XP.\n- Tham gia workshop: +10 XP.\n- Hỗ trợ cộng đồng: +5 đến +20 XP tùy đóng góp.\n- Showcase và feedback có thể nhận thêm XP thưởng.",
+      "source_image_ids": [
+        "IMG-035",
+        "IMG-063"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-027",
+      "topic": "schedule",
+      "canonical_question": "Thư viện mở cửa khi nào?",
+      "question_variants": [
+        "Thư viện có mở cuối tuần không và giờ mở cửa là gì?"
+      ],
+      "answer": "Labcoach cho biết kỳ hè thường không mở cuối tuần; ngày thường 08:45–17:15, phòng 24/7 mở tối và cuối tuần.",
+      "source_image_ids": [
+        "IMG-055"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-018",
+      "topic": "technical_setup",
+      "canonical_question": "Discord dùng email khác email đăng ký có sao không?",
+      "question_variants": [
+        "Tài khoản Discord không cùng email đăng ký có sao không?"
+      ],
+      "answer": "Discord phải sử dụng email đã đăng ký với chương trình; dùng email khác có thể khiến BTC không ghi nhận tài khoản và người học không sử dụng đầy đủ hệ thống khóa học.",
+      "source_image_ids": [
+        "IMG-032"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-020",
+      "topic": "course_policy",
+      "canonical_question": "Không nhận áo ngày khai giảng thì nhận sau bằng cách nào?",
+      "question_variants": [
+        "Bận khai giảng nên chưa nhận áo thì làm sao?"
+      ],
+      "answer": "Nếu chưa nhận áo, liên hệ Labcoach/BTC hoặc gửi email đến địa chỉ hỗ trợ chính thức của chương trình.",
+      "source_image_ids": [
+        "IMG-036"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-022",
+      "topic": "technical_setup",
+      "canonical_question": "Tham gia Zoom bằng email nào?",
+      "question_variants": [
+        "Zoom dùng email cá nhân hay email trường?"
+      ],
+      "answer": "Dùng email đã đăng ký với chương trình. Email này được dùng thống nhất cho Discord, Phoenix, Zoom và GitHub.",
+      "source_image_ids": [
+        "IMG-039"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-026",
+      "topic": "course_policy",
+      "canonical_question": "Điều kiện để được showcase là gì?",
+      "question_variants": [
+        "Cần cấp độ nào để showcase và cả đội hay cá nhân phải đạt?"
+      ],
+      "answer": "Điều kiện showcase:\n- Có role Active Builder.\n- Tích lũy tối thiểu 200 XP.\n- Bài showcase dùng template cộng đồng gồm tên sản phẩm, mô tả, link demo nếu có, tech stack và nội dung cần feedback.\n- Mỗi sản phẩm có thread riêng.",
+      "source_image_ids": [
+        "IMG-051"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-028",
+      "topic": "team_workflow",
+      "canonical_question": "Team ba người có được tự động ghép thêm người không?",
+      "question_variants": [
+        "Nhóm ba người có tự động random fill thành bốn không?"
+      ],
+      "answer": "Team ba người có thể được BTC tự động ghép thêm thành viên; đây không phải cam kết chắc chắn nên nếu cần xác nhận team cụ thể phải hỏi TA.",
+      "source_image_ids": [
+        "IMG-056"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-031",
+      "topic": "team_workflow",
+      "canonical_question": "Team random có dành cho người chưa có team không?",
+      "question_variants": [
+        "Team random dành cho ai chưa có team đúng không?"
+      ],
+      "answer": "Team random dành cho người chưa có team.",
+      "source_image_ids": [
+        "IMG-064"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-033",
+      "topic": "technical_setup",
+      "canonical_question": "Kết nối Wi-Fi trường bằng cách nào?",
+      "question_variants": [
+        "Hướng dẫn kết nối Wi-Fi trường."
+      ],
+      "answer": "VinUni Guest: kết nối rồi xác nhận trên trang web. VinUni Students: dùng tài khoản trường. Với mạng dành cho AI20K hoặc sự kiện, lấy thông tin truy cập hiện hành từ BTC/Labcoach.",
+      "source_image_ids": [
+        "IMG-001"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-007",
+      "topic": "technical_setup",
+      "canonical_question": "Làm sao tạo ticket hỗ trợ?",
+      "question_variants": [
+        "Làm sao để send ticket?"
+      ],
+      "answer": "Dùng /ticket create, chọn loại ticket, điền tiêu đề và mô tả chi tiết.",
+      "source_image_ids": [
+        "IMG-011"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-013",
+      "topic": "submission",
+      "canonical_question": "Ai cần nộp weekly report cho team?",
+      "question_variants": [
+        "Lệnh báo cáo tuần là gì và ai nộp?"
+      ],
+      "answer": "Một thành viên đại diện nộp weekly report cho cả team.",
+      "source_image_ids": [
+        "IMG-022"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-015",
+      "topic": "checkpoint",
+      "canonical_question": "Đăng ký hoặc chọn đề tài bằng cách nào?",
+      "question_variants": [
+        "Đăng ký đề tài như nào?"
+      ],
+      "answer": "Dùng /exam pick để chọn đề tài.",
+      "source_image_ids": [
+        "IMG-025"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-016",
+      "topic": "checkpoint",
+      "canonical_question": "Đổi đề tài đã chọn như thế nào?",
+      "question_variants": [
+        "Cách đổi đề tài đã chọn sang đề tài khác?"
+      ],
+      "answer": "Nếu cần đổi đề tài do conflict, mở ticket yêu cầu đổi trước thời hạn hiện hành.",
+      "source_image_ids": [
+        "IMG-027"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-017",
+      "topic": "deadline",
+      "canonical_question": "Deadline weekly report là khi nào?",
+      "question_variants": [
+        "Deadline of weekly report?"
+      ],
+      "answer": "Weekly report cần được nộp trước 12:00 trước Mentor Duty tối thứ Tư và thứ Bảy.",
+      "source_image_ids": [
+        "IMG-030"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-021",
+      "topic": "course_policy",
+      "canonical_question": "Làm sao kiểm tra điểm danh workshop?",
+      "question_variants": [
+        "Làm sao kiểm tra tình trạng điểm danh?"
+      ],
+      "answer": "Tham gia Zoom bằng đúng email đăng ký và đặt tên đúng cú pháp để hệ thống điểm danh tự động.",
+      "source_image_ids": [
+        "IMG-037"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-023",
+      "topic": "submission",
+      "canonical_question": "Sửa daily hoặc weekly đã nộp bằng cách nào?",
+      "question_variants": [
+        "Viết daily bị nhầm thì sửa thế nào?"
+      ],
+      "answer": "Dùng /daily update để sửa daily và /weekly update để sửa weekly.",
+      "source_image_ids": [
+        "IMG-044"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-024",
+      "topic": "submission",
+      "canonical_question": "Nộp daily report ở đâu?",
+      "question_variants": [
+        "Nộp daily report ở đâu?"
+      ],
+      "answer": "Dùng /daily trong thread Thảo luận của channel riêng của team.",
+      "source_image_ids": [
+        "IMG-046"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-030",
+      "topic": "schedule",
+      "canonical_question": "Mentor Duty diễn ra khi nào và Mentor của team là ai?",
+      "question_variants": [
+        "Có danh sách Mentor trong Mentor Duty không?"
+      ],
+      "answer": "Mentor Duty diễn ra từ 20:00–22:00 tối thứ Tư và thứ Bảy. BTC sẽ thông báo mentor phụ trách từng team.",
+      "source_image_ids": [
+        "IMG-062"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": true,
+      "valid_until": "2026-08-06",
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-005",
+      "topic": "technical_setup",
+      "canonical_question": "Không xem được slide thì xử lý thế nào?",
+      "question_variants": [
+        "Không xem được slide như ảnh thì làm gì?"
+      ],
+      "answer": "Nếu slide chưa hiển thị do tải chậm, chờ tải xong hoặc refresh; nếu vẫn lỗi thì liên hệ TA.",
+      "source_image_ids": [
+        "IMG-008"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": false,
+      "valid_until": null,
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    },
+    {
+      "id": "KB-025",
+      "topic": "other",
+      "canonical_question": "Bot hỗ trợ những nội dung nào?",
+      "question_variants": [
+        "Bot làm được những gì?"
+      ],
+      "answer": "Bot ưu tiên hỗ trợ nội dung thuộc Build Phase. Nội dung khác chỉ được xử lý khi chuyển TA và có phản hồi được xác minh từ TA.",
+      "source_image_ids": [
+        "IMG-048"
+      ],
+      "source_type": "human_reviewed",
+      "official_source": "Labcoach Discord",
+      "authority": "verified",
+      "volatile": false,
+      "valid_until": null,
+      "status": "approved",
+      "verified_by": "Team D305",
+      "verified_at": "2026-07-30"
+    }
+  ]
+}
