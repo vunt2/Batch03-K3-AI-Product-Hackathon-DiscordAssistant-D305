@@ -4,7 +4,7 @@ D305 Assistant là prototype chatbot hỗ trợ học viên trên Discord tìm c
 
 Labcoach tiếp nhận các câu hỏi trong hàng đợi tập trung, gửi phản hồi lại cho học viên và có thể duyệt tri thức mới qua một quy trình riêng. Phản hồi của Labcoach **không tự động trở thành nguồn chính thức**.
 
-Prototype hiện sử dụng Streamlit, Gemini, kho tri thức approved dạng JSON và SQLite cục bộ. Đây chưa phải hệ thống production; hoạt động validation tại CP5 vẫn đang được chuẩn bị.
+Prototype hiện sử dụng Streamlit, Gemini, kho tri thức approved dạng JSON và SQLite cục bộ. Đây chưa phải hệ thống production.
 
 ## Thành viên
 
@@ -47,16 +47,21 @@ Trong `codebase/.env`, chỉ cần điền giá trị cho `GEMINI_API_KEY`. Khô
 | `data/approved/` | Knowledge base đã qua quy trình duyệt |
 | `eval/` | Golden set, eval runner và kết quả các lần đánh giá |
 | `evidence/` | Bằng chứng khảo sát, phân tích impact, checklist và trace đã làm sạch |
-| `validation/` | Sẽ được bổ sung tại CP5; hiện chưa tạo dữ liệu validation giả |
-| `reflection/` | Bản nháp reflection cá nhân của bốn thành viên |
+| `validation/` | Feedback log, tổng hợp validation và changelog CP5 |
+| `reflection/` | Reflection cá nhân của bốn thành viên |
+| `presentation.html` | Slide trình bày tương tác của nhóm |
 
 ## Trạng thái hiện tại
 
 - Prototype Gemini với hai giao diện Learner và Labcoach đã hoạt động.
 - Golden eval lịch sử đạt **20/22** tổng thể.
 - Quality Bar hiện **HOLD** vì nhóm logistics đạt **5/6**, chưa đạt điều kiện cứng.
-- Nhóm đang chuẩn bị CP5 validation với ít nhất 5 người ngoài nhóm.
-- Chưa tuyên bố CP5 hoàn thành hoặc prototype đã sẵn sàng production.
+- CP5 đã có 5 learner ngoài nhóm thử Learner View; phản hồi dẫn tới cải thiện casual routing, giọng trả lời và memory trong phiên.
+- Phiên thử không lưu mapping tên/quote theo từng learner, nên chưa đạt trọn tiêu chí feedback có tên của rubric.
+- Chưa có Labcoach thật tham gia validation; nhóm không tuyên bố workflow Labcoach đã được user thật xác minh.
+- Sau thay đổi CP5, 150/150 unit test đạt và Streamlit AppTest không có exception.
+- Demo script 5 phút đã có; nhóm vẫn cần tự dry run có bấm giờ trước checkpoint.
+- Prototype chưa được tuyên bố sẵn sàng production.
 
 ## Tài liệu dự án và tiêu chí
 
@@ -67,5 +72,18 @@ Trong `codebase/.env`, chỉ cần điền giá trị cho `GEMINI_API_KEY`. Khô
 - [Product specification](spec.md)
 - [CP3 checklist](evidence/cp3-checklist.md)
 - [Kết quả eval 20/22](eval/results/cp3-gemini-gemini-3.5-flash-lite-20260730-210206-summary.md)
+- [CP5 feedback log](validation/user-feedback-log.md)
+- [CP5 validation summary](validation/cp5-summary.md)
+- [CP5 changelog](validation/cp5-changelog.md)
+- [Demo script 5 phút](validation/demo-script.md)
+- [Slide trình bày](presentation.html)
 
 Khi làm việc với repository, thành viên phải giữ nguyên số liệu thật, nêu rõ giới hạn của bằng chứng, không che case fail, không commit secret và không đưa dữ liệu nhạy cảm vào prompt, trace, log hoặc artifact được theo dõi bởi Git.
+
+## An toàn dữ liệu
+
+- Không commit `.env`, API key, database runtime hoặc mapping danh tính local.
+- Không commit toàn bộ data pack được ban tổ chức cấp vào repo nộp bài; chỉ
+  giữ trích dẫn ngắn và mã tham chiếu cần thiết.
+- Chỉ publish knowledge khi nguồn và người duyệt có thẩm quyền đã được xác
+  minh. Self-test của thành viên team không phải nguồn approved.

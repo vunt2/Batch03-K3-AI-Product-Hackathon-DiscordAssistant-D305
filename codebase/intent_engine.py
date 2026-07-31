@@ -7,6 +7,7 @@ import uuid
 from typing import TypedDict
 
 from conversation_context import (
+    extract_preferred_name,
     prepare_conversation_history,
     prepare_current_message,
 )
@@ -74,12 +75,18 @@ HOMEWORK_PATTERN = re.compile(
     r"chép đáp án|do my homework)\b",
     re.IGNORECASE,
 )
+CASUAL_PATTERN = re.compile(
+    r"\b(?:xin chào|chào|hello|hi|hú lô|bot ơi|cảm ơn|thank|adu|slay|"
+    r"căng vậy|xin vía|hay thế)\b",
+    re.IGNORECASE,
+)
 
 
 def classify_message(
     message: str,
     *,
     conversation_history: list[dict[str, str]] | None = None,
+    preferred_name: str | None = None,
     use_mock: bool = False,
 ) -> IntentResult:
     """Route one learner message and return UI-safe structured metadata."""
@@ -123,7 +130,10 @@ def classify_message(
     verified_context = knowledge_match_to_context(knowledge_match)
     try:
         raw_output = call_gemini_api(
-            build_system_prompt(verified_context),
+            build_system_prompt(
+                verified_context,
+                preferred_name=preferred_name,
+            ),
             safe_model_message,
             conversation_history=safe_history,
             config=config,
@@ -138,6 +148,30 @@ def classify_message(
         )
         if is_contract_fallback:
             metadata["used_fallback"] = True
+
+        if (
+            not is_contract_fallback
+            and not knowledge_match
+            and _is_casual_message(clean_message)
+            and (
+                validated["intent"] != "greeting"
+                or validated["action"] != "answer_briefly"
+            )
+        ):
+            metadata["used_fallback"] = True
+            return _result(
+                intent="greeting",
+                confidence=1.0,
+                action="answer_briefly",
+                reply=_casual_fallback_reply(clean_message),
+                rationale=(
+                    "Casual chat vô hại được định tuyến lại để không tạo handoff."
+                ),
+                is_fallback=True,
+                trace_id=trace_id,
+                metadata=metadata,
+                knowledge_match=None,
+            )
 
         reply = validated["reply"]
         if (
@@ -254,6 +288,20 @@ def _safe_local_fallback(
             error_type=error_type,
             error_code=error_code,
         )
+    if _is_casual_message(message):
+        return _result(
+            intent="greeting",
+            confidence=1.0,
+            action="answer_briefly",
+            reply=_casual_fallback_reply(message),
+            rationale=f"{friendly_reason} Casual chat vô hại được trả lời ngắn gọn.",
+            is_fallback=True,
+            trace_id=trace_id,
+            metadata=metadata,
+            knowledge_match=None,
+            error_type=error_type,
+            error_code=error_code,
+        )
     if LOGISTICS_PATTERN.search(message):
         return _result(
             intent="logistics",
@@ -287,6 +335,32 @@ def _safe_local_fallback(
         error_type=error_type,
         error_code=error_code,
     )
+
+
+def _is_casual_message(message: str) -> bool:
+    """Return True only for short harmless casual messages without course asks."""
+
+    clean = message.strip()
+    if not clean or len(clean) > 160:
+        return False
+    if HOMEWORK_PATTERN.search(clean) or LOGISTICS_PATTERN.search(clean):
+        return False
+    if extract_preferred_name(clean):
+        return True
+    return bool(CASUAL_PATTERN.search(clean))
+
+
+def _casual_fallback_reply(message: str) -> str:
+    """Provide varied, brief local replies without inventing course facts."""
+
+    lowered = message.casefold()
+    if "cảm ơn" in lowered or "thank" in lowered:
+        return "Không có gì nha! Cần gì cứ gọi mình nhé 🙂"
+    if "xin vía" in lowered:
+        return "Gửi bạn chút vía tự tin nè ✨ Cứ bám checklist và làm từng bước nhé!"
+    if any(term in lowered for term in ("slay", "adu", "căng vậy", "hay thế")):
+        return "Haha, năng lượng lên cao rồi đó 😄 Mình vẫn ở đây nếu bạn cần hỗ trợ!"
+    return "Hú lô! Mình đây 👋 Bạn muốn hỏi gì nào?"
 
 
 def _result(

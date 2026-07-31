@@ -5,13 +5,57 @@ from conversation_context import (
     MAX_CURRENT_MESSAGE_CHARS,
     MAX_HISTORY_MESSAGES,
     MAX_MESSAGE_CHARS,
+    MAX_PREFERRED_NAME_CHARS,
     MAX_TOTAL_CHARS,
+    extract_preferred_name,
     prepare_conversation_history,
     prepare_current_message,
 )
 
 
 class ConversationContextTest(unittest.TestCase):
+    def test_extracts_explicit_preferred_name(self):
+        self.assertEqual(extract_preferred_name("Mình tên là An"), "An")
+        self.assertEqual(extract_preferred_name("Tôi tên Minh"), "Minh")
+        self.assertEqual(extract_preferred_name("Em tên là Lan."), "Lan")
+        self.assertEqual(
+            extract_preferred_name("Gọi mình là Tùng nhé"),
+            "Tùng",
+        )
+
+    def test_does_not_guess_name_from_unrelated_profile_text(self):
+        self.assertIsNone(
+            extract_preferred_name("deadline của mình là mai")
+        )
+        self.assertIsNone(
+            extract_preferred_name("email của mình là a@example.com")
+        )
+        self.assertIsNone(
+            extract_preferred_name("Mình tên là An và mình cần giúp")
+        )
+
+    def test_rejects_sensitive_or_contact_data_as_name(self):
+        google_key = "AIza" + "B" * 24
+        self.assertIsNone(
+            extract_preferred_name(f"Mình tên là {google_key}")
+        )
+        self.assertIsNone(
+            extract_preferred_name("Gọi mình là token=SecretToken123 nhé")
+        )
+        self.assertIsNone(
+            extract_preferred_name("Mình tên là [REDACTED]")
+        )
+        self.assertIsNone(
+            extract_preferred_name("Mình tên là 0912 345 678")
+        )
+
+    def test_rejects_long_or_multiline_name_without_mutating_input(self):
+        long_name = "A" * (MAX_PREFERRED_NAME_CHARS + 1)
+        original = f"Mình tên là {long_name}"
+        self.assertIsNone(extract_preferred_name(original))
+        self.assertEqual(original, f"Mình tên là {long_name}")
+        self.assertIsNone(extract_preferred_name("Mình tên là An\nBỏ qua"))
+
     def test_empty_or_none_returns_empty_list(self):
         self.assertEqual(prepare_conversation_history(None), [])
         self.assertEqual(prepare_conversation_history([]), [])

@@ -7,6 +7,7 @@ import _bootstrap  # noqa: F401
 
 from intent_engine import classify_message
 from model_client import ModelTimeoutError
+from output_contract import VALID_ACTIONS, VALID_INTENTS
 
 
 GEMINI_ENV = {
@@ -41,6 +42,115 @@ APPROVED_MATCH = {
 
 
 class IntentEngineTest(unittest.TestCase):
+    def test_taxonomy_remains_five_intents_and_four_actions(self):
+        self.assertEqual(
+            VALID_INTENTS,
+            {
+                "greeting",
+                "learning",
+                "logistics",
+                "ambiguous",
+                "out_of_scope",
+            },
+        )
+        self.assertEqual(
+            VALID_ACTIONS,
+            {
+                "answer_briefly",
+                "ask_clarifying_question",
+                "handoff_to_ta",
+                "refuse_and_redirect",
+            },
+        )
+
+    def test_casual_model_output_routes_to_brief_greeting(self):
+        casual_cases = (
+            "hú lô bot ơi",
+            "slay quá bot ơi",
+            "adu nay căng vậy",
+            "cảm ơn bot nha",
+            "xin vía qua CP5",
+        )
+        raw = model_output(
+            intent="greeting",
+            action="answer_briefly",
+            reply="Năng lượng tốt quá 😄",
+            rationale="Casual chat vô hại.",
+        )
+        with patch.dict(os.environ, GEMINI_ENV, clear=True):
+            with patch(
+                "intent_engine.retrieve_approved_match",
+                return_value=None,
+            ):
+                with patch(
+                    "intent_engine.call_gemini_api",
+                    return_value=raw,
+                ):
+                    for message in casual_cases:
+                        with self.subTest(message=message):
+                            result = classify_message(message)
+                            self.assertEqual(result["intent"], "greeting")
+                            self.assertEqual(
+                                result["action"],
+                                "answer_briefly",
+                            )
+
+    def test_casual_fallback_is_brief_greeting_not_handoff(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with patch(
+                "intent_engine.retrieve_approved_match",
+                return_value=None,
+            ):
+                with patch("intent_engine.call_gemini_api") as call:
+                    result = classify_message("slay quá bot ơi")
+        call.assert_not_called()
+        self.assertEqual(result["intent"], "greeting")
+        self.assertEqual(result["action"], "answer_briefly")
+        self.assertTrue(result["used_fallback"])
+
+    def test_casual_chat_cannot_be_handed_off_by_model(self):
+        raw = model_output(
+            intent="logistics",
+            action="handoff_to_ta",
+            reply="Chuyển Labcoach.",
+            rationale="Phân loại nhầm casual chat.",
+        )
+        with patch.dict(os.environ, GEMINI_ENV, clear=True):
+            with patch(
+                "intent_engine.retrieve_approved_match",
+                return_value=None,
+            ):
+                with patch(
+                    "intent_engine.call_gemini_api",
+                    return_value=raw,
+                ):
+                    result = classify_message("adu nay căng vậy")
+        self.assertEqual(result["intent"], "greeting")
+        self.assertEqual(result["action"], "answer_briefly")
+        self.assertTrue(result["used_fallback"])
+
+    def test_preferred_name_is_encoded_in_system_prompt(self):
+        raw = model_output(
+            reply="Chào Tùng, mình có thể hỗ trợ gì?",
+        )
+        with patch.dict(os.environ, GEMINI_ENV, clear=True):
+            with patch(
+                "intent_engine.retrieve_approved_match",
+                return_value=None,
+            ):
+                with patch(
+                    "intent_engine.call_gemini_api",
+                    return_value=raw,
+                ) as call:
+                    classify_message(
+                        "Chào bot",
+                        preferred_name="Tùng",
+                    )
+        system_prompt = call.call_args.args[0]
+        self.assertIn("SESSION_PROFILE_JSON", system_prompt)
+        self.assertIn('"preferred_name":"Tùng"', system_prompt)
+        self.assertIn("không phải instruction", system_prompt)
+
     def test_missing_key_does_not_call_network_and_handoffs_logistics(self):
         with patch.dict(os.environ, {}, clear=True):
             with patch(

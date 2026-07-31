@@ -1,6 +1,6 @@
 # CP1 Canvas — Discord Learner Assistant (Nhóm D305)
 
-> Các mục `UNVERIFIED`/`CẦN BỔ SUNG` chưa được xem là evidence đã xác minh.
+> Các mục `UNVERIFIED` được giữ lại để phản ánh đúng giới hạn evidence tại CP1.
 
 1. **Hướng:** B — Trợ lý Học viên Discord; tối ưu nhận diện intent và phản hồi
    đúng mức.
@@ -20,6 +20,9 @@
    thiếu căn cứ.
 6. **Automation + willing users:** Conditional — case rõ có thể phản hồi; case
    mơ hồ hỏi lại; logistics thiếu nguồn chuyển TA vì cost-of-error cao.
-   `CẦN BỔ SUNG ≥3 willing users có tên`.
-7. **Phân công:** `CẦN BỔ SUNG tên` cho evidence/spec, prompt/eval,
-   prototype/tích hợp và validation/demo.
+   Tại CP1 nhóm chưa ghi nhận willing user có tên. Đến CP5, 5 learner ngoài
+   nhóm (mã U01–U05) đã thử prototype; đây không được tính ngược thành willing
+   user đã khai từ CP1.
+7. **Phân công:** Nguyễn Phúc Hưng — evidence/spec; Nguyễn Văn Phong —
+   golden set/evaluation; Nguyễn Hữu Khánh Tùng — prototype/AI integration;
+   Nguyễn Tuấn Vũ — nhóm trưởng, prompt/safety và điều phối demo.

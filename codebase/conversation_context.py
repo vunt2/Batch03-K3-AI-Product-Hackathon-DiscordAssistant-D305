@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import re
 from typing import Any
 
 from output_contract import redact_sensitive_text
@@ -12,6 +13,92 @@ MAX_HISTORY_MESSAGES = 6
 MAX_TOTAL_CHARS = 4000
 MAX_MESSAGE_CHARS = 1000
 MAX_CURRENT_MESSAGE_CHARS = 4000
+MAX_PREFERRED_NAME_CHARS = 40
+
+_PREFERRED_NAME_PATTERNS = (
+    re.compile(
+        r"^(?:mình|tôi|em)\s+tên(?:\s+là)?\s+(?P<name>.+?)\s*$",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"^gọi\s+(?:mình|tôi|em)\s+là\s+(?P<name>.+?)\s*$",
+        re.IGNORECASE,
+    ),
+)
+_UNSAFE_NAME_CONTENT = re.compile(
+    r"(?:https?://|www\.|@|\[redacted\]|\b(?:api[_ -]?key|token|"
+    r"password|secret|bearer)\b)",
+    re.IGNORECASE,
+)
+_PHONE_LIKE = re.compile(r"(?:\+?\d[\s().-]*){7,}")
+_POLITE_NAME_SUFFIX = re.compile(
+    r"\s+(?:nhé|nha|ạ)\s*$",
+    re.IGNORECASE,
+)
+_NON_NAME_WORDS = {
+    "và",
+    "nhưng",
+    "đang",
+    "muốn",
+    "cần",
+    "giúp",
+    "hỏi",
+    "deadline",
+    "email",
+}
+
+
+def extract_preferred_name(message: str | None) -> str | None:
+    """Extract an explicitly provided session-only preferred name.
+
+    The parser deliberately accepts only clear, whole-message introductions.
+    It never guesses a name from unrelated content and rejects values that
+    resemble contact details, credentials, redacted data or multiline input.
+    """
+
+    if not isinstance(message, str) or "\n" in message or "\r" in message:
+        return None
+
+    text = message.strip()
+    if not text:
+        return None
+
+    candidate: str | None = None
+    for pattern in _PREFERRED_NAME_PATTERNS:
+        match = pattern.fullmatch(text)
+        if match:
+            candidate = match.group("name")
+            break
+
+    if candidate is None:
+        return None
+
+    candidate = candidate.strip()
+    candidate = candidate.rstrip(" \t.,!?;:…")
+    candidate = _POLITE_NAME_SUFFIX.sub("", candidate).strip()
+    candidate = candidate.rstrip(" \t.,!?;:…")
+    candidate = " ".join(candidate.split())
+
+    if not candidate or len(candidate) > MAX_PREFERRED_NAME_CHARS:
+        return None
+    if _UNSAFE_NAME_CONTENT.search(candidate) or _PHONE_LIKE.search(candidate):
+        return None
+    if redact_sensitive_text(candidate) != candidate:
+        return None
+    if any(char.isdigit() for char in candidate):
+        return None
+    if not all(
+        char.isalpha() or char.isspace() or char in {"-", "'", "’"}
+        for char in candidate
+    ):
+        return None
+    if not any(char.isalpha() for char in candidate):
+        return None
+    words = candidate.casefold().split()
+    if len(words) > 5 or any(word in _NON_NAME_WORDS for word in words):
+        return None
+
+    return candidate
 
 
 def prepare_current_message(message: str | None) -> str:

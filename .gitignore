@@ -10,3 +10,4 @@ data/**/local-file-map.csv
 data/runtime/*.db
 data/runtime/*.db-shm
 data/runtime/*.db-wal
+data/vlearn-pack/

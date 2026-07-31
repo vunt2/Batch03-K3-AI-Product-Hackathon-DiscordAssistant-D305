@@ -1,7 +1,5 @@
 # Reflection — Nguyễn Hữu Khánh Tùng (2A202601781)
 
-> Trạng thái: Bản nháp — thành viên cần đọc, xác nhận và chỉnh lại theo trải nghiệm thực tế trước khi nộp.
-
 ## Vai trò của tôi
 
 Tôi phụ trách AI Integration, kết nối Gemini với ứng dụng Streamlit. Tôi làm cho model client, intent engine, cấu hình môi trường và fallback hoạt động thống nhất. Ngoài việc model trả lời được, tôi phải bảo đảm lỗi mạng, lỗi JSON hoặc thiếu cấu hình không làm app crash hay tạo câu trả lời logistics thiếu nguồn.
@@ -22,12 +20,17 @@ Tôi tự quyết định timeout, điểm chuyển fallback và metadata an to�
 
 Smoke test từng bị chặn bởi Gemini HTTP 400, credential hoặc timeout. Có API key không đồng nghĩa request chắc chắn thành công; demo chỉ dựa vào happy path rất dễ vỡ. Tôi học rằng lớp AI cần timeout, validator, fallback và metadata từ đầu. Báo cáo phải nói rõ fallback không phải real model call để tránh nhầm với kiểm thử live.
 
+## Kết quả sau CP5
+
+Năm learner đánh giá flow chính dùng được nhưng cho rằng bot còn cứng, casual
+chat đôi khi bị chuyển Labcoach và chưa nhớ người dùng. Phần tích hợp được cập
+nhật để lưu tên do learner tự khai trong `st.session_state`, truyền tên vào
+prompt dưới dạng JSON data và xóa khi reset. Tên không được ghi vào handoff,
+SQLite hoặc knowledge. Casual guard cũng ngăn câu trend vô hại tạo queue.
+
 ## Điều tôi muốn cải thiện
 
-Tôi muốn làm rõ mã lỗi đã làm sạch và quan sát từng bước request mà không lộ dữ liệu nhạy cảm. Tôi cũng muốn giảm phụ thuộc giữa UI và model client nhưng giữ kiến trúc vừa đủ. Sau CP5, tôi sẽ xem lỗi thực tế có liên quan đến độ trễ, fallback hoặc cách UI giải thích trạng thái hay không.
-
-## Bổ sung sau CP5
-
-- [ ] Bổ sung một phản hồi thực tế từ user test.
-- [ ] Ghi thay đổi nhóm thực hiện sau feedback.
-- [ ] Xác nhận thành viên đã đọc và có thể giải thích nội dung reflection.
+Tôi muốn làm rõ mã lỗi đã làm sạch và quan sát từng bước request mà không lộ
+dữ liệu nhạy cảm. Nếu phát triển sau demo, memory dài hạn chỉ nên được thêm
+sau khi có authentication, consent và chính sách xóa dữ liệu; bản prototype
+hiện chỉ nhớ trong phiên để giữ phạm vi và giảm rủi ro.

@@ -33,8 +33,8 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 
 | Ứng viên | Bao nhiêu người gặp | Tần suất | Tổn thất mỗi lần (Cost of Error) | Khả thi trong hackathon | Quyết định |
 |---|---:|---:|---|---|---|
-| Grounded FAQ / answer-or-handoff | 7/18 chọn “câu hỏi không được trả lời” (`L_DIFFICULTY_cau_hoi_khong_duoc_tra_loi`); 6/18 chọn “câu hỏi trùng lặp” (`L_DIFFICULTY_co_qua_nhieu_cau_hoi_trung_lap`) | 6/18 ở Q07 mức ≥4 (`L_ASKED_OLD_QUESTION_GE4`); đây là self-report, không phải log Discord | `TODO/UNVERIFIED` — khảo sát không đo tổn thất mỗi lần | Có — khớp flow answer/clarify/handoff hiện có | Chọn tạm thời |
-| Unanswered queue / daily digest | 16/18 gặp tin nhắn bị trôi (`L_SUPPORT_MESSAGE_DRIFT`); 13/18 khó theo dõi hội thoại dài mức ≥4 (`L_SUPPORT_LONG_THREAD_GE4`) | `UNVERIFIED` — chưa có số lần/ngày; TA n=2 chỉ là tín hiệu định hướng | `TODO/UNVERIFIED` — chưa đo phút/điểm/niềm tin mất mỗi lần | Trung bình — cần gom, lưu queue và tóm tắt | Loại tạm thời khỏi lát cắt P0 |
+| Grounded FAQ / answer-or-handoff | 7/18 chọn “câu hỏi không được trả lời” (`L_DIFFICULTY_cau_hoi_khong_duoc_tra_loi`); 6/18 chọn “câu hỏi trùng lặp” (`L_DIFFICULTY_co_qua_nhieu_cau_hoi_trung_lap`) | 6/18 ở Q07 mức ≥4 (`L_ASKED_OLD_QUESTION_GE4`); đây là self-report, không phải log Discord | `UNVERIFIED` — khảo sát không đo tổn thất mỗi lần | Có — khớp flow answer/clarify/handoff hiện có | Chọn tạm thời |
+| Unanswered queue / daily digest | 16/18 gặp tin nhắn bị trôi (`L_SUPPORT_MESSAGE_DRIFT`); 13/18 khó theo dõi hội thoại dài mức ≥4 (`L_SUPPORT_LONG_THREAD_GE4`) | `UNVERIFIED` — chưa có số lần/ngày; TA n=2 chỉ là tín hiệu định hướng | `UNVERIFIED` — chưa đo phút/điểm/niềm tin mất mỗi lần | Trung bình — cần gom, lưu queue và tóm tắt | Loại tạm thời khỏi lát cắt P0 |
 | Phát hiện learner stuck | 15/18 từng từ bỏ tìm kiếm (`L_ABANDONED_SEARCH_YES`) | `UNVERIFIED` — câu hỏi chỉ đo “đã từng”, không đo số lần | 4/18 báo mất trên 5 phút/lần tìm (`L_SEARCH_OVER_5_MINUTES`); chưa có thời gian chính xác cho toàn mẫu | Thấp — cần lịch sử và ngưỡng chủ động | Loại tạm thời khỏi lát cắt P0 |
 
 - **Lý do chọn tạm thời:** Grounded FAQ/answer-or-handoff có pain signal trực
@@ -43,8 +43,8 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
   impact thực tế.
 - **Giới hạn quyết định:** Survey chưa đủ dữ liệu cho công thức “bao nhiêu người
   × tần suất × tổn thất mỗi lần”, nên chưa thể xếp hạng ba ứng viên hoàn toàn
-  bằng impact. Các ô `TODO/UNVERIFIED` phải được bổ sung bằng mining Discord
-  hoặc nghiên cứu tiếp; nếu evidence mới đổi thứ tự, ghi quyết định trong §9.
+  bằng impact. Các ô `UNVERIFIED` được giữ như giới hạn của dữ liệu và không
+  được dùng làm claim định lượng khi chưa có phép đo bổ sung.
 
 ## §3. Giải pháp tương tự đã nghiên cứu
 
@@ -162,19 +162,22 @@ Loại: [x] Tối ưu tính năng có sẵn  [ ] Tính năng mới
 | Prompting & Safety Contract | **2A202601845 — Nguyễn Tuấn Vũ (nhóm trưởng)** | **2A202601781 — Nguyễn Hữu Khánh Tùng** | `codebase/prompts.py`, `codebase/output_contract.py` |
 | Prototype App & Architecture | **2A202601781 — Nguyễn Hữu Khánh Tùng** | **2A202601845 — Nguyễn Tuấn Vũ (nhóm trưởng)** | `codebase/app.py`, `codebase/intent_engine.py`, `codebase/model_client.py` |
 
-- **Willing users ($\ge 3$ người dự kiến):** **PENDING CP5** (hiện 0/3 người đã tuyển). Theo kế hoạch CP5, nhóm dự kiến tuyển ít nhất 3 người ngoài nhóm vào ngày mai (buổi 2) để thực hiện validation và ghi nhận feedback log thực tế trên prototype. Nhóm cam kết không tự tạo tên, mã học viên hoặc kết quả validation giả.
-- **Kế hoạch Validation & Công việc còn thiếu cho CP5 (Buổi 2):**
-  1. **Tuyển dụng & Validation:** Nguyễn Phúc Hưng điều phối tuyển ≥3 willing users ngoài nhóm; Nguyễn Văn Phong thực hiện log feedback (cần ≥5 quote nguyên văn có tên/vai).
-  2. **Audit & Changelog:** Cập nhật `validation/` log và ghi nhận thay đổi vào Changelog §9.
-  3. **Kỹ thuật & Dry Run:** Nguyễn Tuấn Vũ và Nguyễn Hữu Khánh Tùng phụ trách rà soát kỹ thuật prototype Streamlit UI, chuẩn bị slide 6 trang và thực hiện dry run demo trước CP6.
+- **Validation CP5:** 5 learner ngoài nhóm (mã U01–U05) đã thử Learner View,
+  mỗi người đặt 5 câu hỏi tùy ý. Nhóm không ghi nhận tên/quote nguyên văn theo
+  từng người và chưa có Labcoach thật tham gia; các giới hạn này được công
+  khai tại `validation/user-feedback-log.md` thay vì bổ sung dữ liệu giả.
+- **Phân công CP5:** Nguyễn Phúc Hưng điều phối validation và tổng hợp evidence;
+  Nguyễn Văn Phong đối chiếu feedback với test/eval; Nguyễn Tuấn Vũ và Nguyễn
+  Hữu Khánh Tùng cập nhật prompt, routing, session memory và rà kỹ thuật.
 
 ## §9. Changelog
 
 | Thời điểm | Đổi gì | Vì sao |
 |---|---|---|
-| CP1 | Tạo nháp Canvas | Định hình bài toán và nhóm 5 intent. |
+| CP1 | Tạo Canvas ban đầu | Định hình bài toán và nhóm 5 intent. |
 | CP2 | Dựng flow 5 intent với rule mock | Chứng minh flow tương tác UI bấm được trước khi nối model. |
 | CP3 | Thêm LLM API client + Output Contract Validator | Code path cho model thật đã có; logistics thiếu nguồn bị ép handoff và output lỗi fail-safe. |
 | CP3 Run 1 | Chạy đủ 22 case ở Safety Fallback | Ghi nhận trung thực 3/22; chưa tính là bằng chứng AI thật do thiếu API key. |
 | CP3 Gemini Golden Eval | Gọi live 22 case với Gemini real calls | Chạy thành công 22/22 case: 20 PASS, 2 FAIL, 0 FALLBACK. CP3 checkpoint hoàn thành; Quality Bar **NOT MET / HOLD** vì điều kiện cứng logistics chỉ đạt 5/6. |
 | CP4 | Audit spec.md & evidence theo checklist CP4 | Hoàn thiện 8 phần spec, chuẩn hóa số liệu bằng chứng khảo sát (n=20) và mining Discord (n=88), cập nhật bảng impact 3 ứng viên, cập nhật 4 thành viên (kèm mã HV) và lập kế hoạch CP5. |
+| CP5 | Validation với 5 learner ngoài nhóm và cải thiện hội thoại | Casual/trend không còn bị handoff không cần thiết; giọng trả lời tự nhiên hơn; bổ sung emoji có kiểm soát và nhớ tên trong phiên. Giữ nguyên logistics safety, output contract và Quality Bar. |

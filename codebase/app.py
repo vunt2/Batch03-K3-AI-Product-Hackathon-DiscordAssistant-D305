@@ -63,6 +63,7 @@ from handoff_store import (  # noqa: E402
 )
 from insight_service import build_daily_digest  # noqa: E402
 from intent_engine import IntentResult, classify_message  # noqa: E402
+from conversation_context import extract_preferred_name  # noqa: E402
 from knowledge_base import load_approved_knowledge  # noqa: E402
 from knowledge_publisher import (  # noqa: E402
     KnowledgePublishError,
@@ -327,6 +328,7 @@ SAMPLE_MESSAGES = (
 
 def initialize_state() -> None:
     st.session_state.setdefault("messages", [dict(WELCOME_MESSAGE)])
+    st.session_state.setdefault("learner_display_name", "")
     st.session_state.setdefault(
         "learner_session_id", f"session-{uuid.uuid4().hex[:12]}"
     )
@@ -349,6 +351,7 @@ def initialize_state() -> None:
 
 
 def reset_demo_session() -> None:
+    st.session_state.learner_display_name = ""
     try:
         delete_session_handoffs(st.session_state.learner_session_id)
         st.session_state.messages = [dict(WELCOME_MESSAGE)]
@@ -369,6 +372,10 @@ def submit_message(message: str) -> None:
     if not clean_message:
         return
 
+    preferred_name = extract_preferred_name(clean_message)
+    if preferred_name:
+        st.session_state.learner_display_name = preferred_name
+
     history = list(st.session_state.messages)
     st.session_state.messages.append(
         {"role": "user", "content": clean_message, "result": None}
@@ -376,7 +383,11 @@ def submit_message(message: str) -> None:
     try:
         with st.spinner("Gemini đang kiểm tra ý định và nguồn phù hợp…"):
             result = classify_message(
-                clean_message, conversation_history=history
+                clean_message,
+                conversation_history=history,
+                preferred_name=(
+                    st.session_state.learner_display_name or None
+                ),
             )
     except Exception:
         result = {
@@ -498,6 +509,10 @@ def render_learner_view() -> None:
         """,
         unsafe_allow_html=True,
     )
+    if st.session_state.learner_display_name:
+        st.caption(
+            f"Đang nhớ trong phiên: {st.session_state.learner_display_name}"
+        )
 
     st.markdown("#### Câu hỏi mẫu")
     sample_columns = st.columns(3)
