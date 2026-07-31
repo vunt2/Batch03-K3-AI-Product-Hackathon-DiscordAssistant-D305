@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Message — Trợ lý Học viên Discord</title>
+
+    <!-- Fonts: Fontshare Clash Display + General Sans -->
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@400;500;600;700&f[]=general-sans@400;500;600&display=swap">
+
+    <style>
+        /* ===========================================
+           CSS CUSTOM PROPERTIES (THEME)
+           Dark teal + warm amber palette — editorial tech feel
+           =========================================== */
+        :root {
+            /* Colors */
+            --stage-bg: #080e14;
+            --slide-bg: #0b1219;
+            --bg-primary: #0b1219;
+            --bg-secondary: #111e2b;
+            --bg-card: rgba(17, 30, 43, 0.85);
+            --text-primary: #e8eff6;
+            --text-secondary: #7a9ab5;
+            --text-muted: #4a6a82;
+            --accent: #00d4aa;
+            --accent-warm: #f5a623;
+            --accent-danger: #ff6b6b;
+            --accent-glow: rgba(0, 212, 170, 0.15);
+            --accent-glow-warm: rgba(245, 166, 35, 0.15);
+            --border: rgba(0, 212, 170, 0.12);
+            --border-warm: rgba(245, 166, 35, 0.12);
+
+            /* Typography — 1920×1080 stage */
+            --font-display: 'Clash Display', sans-serif;
+            --font-body: 'General Sans', sans-serif;
+            --title-size: 96px;
+            --subtitle-size: 34px;
+            --heading-size: 64px;
+            --body-size: 28px;
+            --small-size: 22px;
+            --caption-size: 18px;
+
+            /* Spacing */
+            --slide-padding: 80px;
+            --content-gap: 32px;
+
+            /* Animation */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --duration-normal: 0.7s;
+            --duration-slow: 1.2s;
+        }
+
+        /* ===========================================
+           BASE RESET
+           =========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ===========================================
+           FIXED 16:9 STAGE: MANDATORY BASE STYLES
+           (viewport-base.css contents)
+           =========================================== */
+        html, body {
+            width: 100%; height: 100%;
+            margin: 0; overflow: hidden;
+            background: var(--stage-bg, #000);
+        }
+
+        .deck-viewport {
+            position: fixed; inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg, #000);
+        }
+
+        .deck-stage {
+            position: absolute; left: 0; top: 0;
+            width: 1920px; height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--slide-bg, #fff);
+        }
+
+        .slide {
+            position: absolute; inset: 0;
+            width: 1920px; height: 1080px;
+            overflow: hidden;
+            display: block;
+            visibility: hidden; opacity: 0; pointer-events: none;
+            background: var(--slide-bg);
+        }
+        .slide.active, .slide.visible {
+            visibility: visible; opacity: 1; pointer-events: auto; z-index: 1;
+        }
+
+        img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+
+        .deck-controls {
+            position: fixed; left: 50%; bottom: 22px;
+            transform: translateX(-50%); z-index: 1000;
+        }
+
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            .slide {
+                position: relative; display: block !important;
+                visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+                width: 1920px; height: 1080px;
+                break-after: page; page-break-after: always;
+            }
+            .slide:last-child { break-after: auto; page-break-after: auto; }
+            .deck-controls { display: none !important; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.2s !important;
+            }
+        }
+
+        /* ===========================================
+           ANIMATIONS — Reveal system
+           =========================================== */
+        .reveal {
+            opacity: 0; transform: translateY(35px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+        .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+        .reveal:nth-child(1) { transition-delay: 0.08s; }
+        .reveal:nth-child(2) { transition-delay: 0.18s; }
+        .reveal:nth-child(3) { transition-delay: 0.28s; }
+        .reveal:nth-child(4) { transition-delay: 0.38s; }
+        .reveal:nth-child(5) { transition-delay: 0.48s; }
+        .reveal:nth-child(6) { transition-delay: 0.58s; }
+        .reveal:nth-child(7) { transition-delay: 0.68s; }
+
+        .reveal-left {
+            opacity: 0; transform: translateX(-50px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+        .slide.visible .reveal-left { opacity: 1; transform: translateX(0); }
+
+        .reveal-right {
+            opacity: 0; transform: translateX(50px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+        .slide.visible .reveal-right { opacity: 1; transform: translateX(0); }
+
+        .reveal-scale {
+            opacity: 0; transform: scale(0.88);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-spring);
+        }
+        .slide.visible .reveal-scale { opacity: 1; transform: scale(1); }
+
+        /* ===========================================
+           SHARED SLIDE LAYOUT UTILITIES
+           =========================================== */
+        .slide-inner {
+            width: 100%; height: 100%;
+            padding: var(--slide-padding);
+            display: flex; flex-direction: column;
+            position: relative;
+        }
+
+        .slide-number {
+            display: none;
+        }
+
+        .section-label {
+            font-family: var(--font-body);
+            font-size: var(--caption-size);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .slide-title {
+            font-family: var(--font-display);
+            font-size: var(--heading-size);
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.15;
+            margin-bottom: 28px;
+        }
+
+        .slide-body {
+            font-family: var(--font-body);
+            font-size: var(--body-size);
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        /* ===========================================
+           DECORATIVE — Grid background pattern
+           =========================================== */
+        .grid-overlay {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 212, 170, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 170, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .gradient-orb {
+            position: absolute; border-radius: 50%;
+            filter: blur(120px); pointer-events: none;
+        }
+
+        /* ===========================================
+           SLIDE 1: TITLE
+           =========================================== */
+        .title-slide .slide-inner {
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .title-slide .orb-1 {
+            width: 600px; height: 600px;
+            top: -120px; right: -100px;
+            background: radial-gradient(circle, rgba(0, 212, 170, 0.18), transparent 70%);
+        }
+        .title-slide .orb-2 {
+            width: 500px; height: 500px;
+            bottom: -80px; left: -60px;
+            background: radial-gradient(circle, rgba(245, 166, 35, 0.12), transparent 70%);
+        }
+        .title-slide .team-badge {
+            font-family: var(--font-body);
+            font-size: 20px; letter-spacing: 6px; text-transform: uppercase;
+            color: var(--accent); font-weight: 600;
+            padding: 10px 28px;
+            border: 1.5px solid var(--accent);
+            border-radius: 40px;
+            margin-bottom: 48px;
+        }
+        .title-slide h1 {
+            font-family: var(--font-display);
+            font-size: 108px; font-weight: 700;
+            color: var(--text-primary); line-height: 1.08;
+            max-width: 1400px;
+        }
+        .title-slide h1 span {
+            background: linear-gradient(135deg, var(--accent), #4de8c7);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .title-slide .subtitle {
+            font-family: var(--font-body);
+            font-size: 30px; color: var(--text-secondary);
+            margin-top: 32px; max-width: 900px; line-height: 1.5;
+        }
+        .title-slide .meta-line {
+            font-family: var(--font-body);
+            font-size: 18px; color: var(--text-muted);
+            margin-top: 56px; letter-spacing: 1px;
+        }
+
+        /* ===========================================
+           SLIDE 2: PROBLEM — Pain statement
+           =========================================== */
+        .pain-cards {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 28px; margin-top: 32px; flex: 1;
+        }
+        .pain-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 36px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .pain-card .quote {
+            font-family: var(--font-body);
+            font-size: 24px; color: var(--text-primary);
+            font-style: italic; line-height: 1.55;
+            border-left: 3px solid var(--accent-warm);
+            padding-left: 20px;
+        }
+        .pain-card .source {
+            font-family: var(--font-body);
+            font-size: 16px; color: var(--text-muted);
+        }
+        .stat-highlight {
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.08), rgba(0, 212, 170, 0.02));
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 16px; padding: 36px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center;
+        }
+        .stat-highlight .stat-number {
+            font-family: var(--font-display);
+            font-size: 80px; font-weight: 700;
+            color: var(--accent); line-height: 1;
+        }
+        .stat-highlight .stat-label {
+            font-family: var(--font-body);
+            font-size: 22px; color: var(--text-secondary);
+            margin-top: 12px; max-width: 300px;
+        }
+
+        /* ===========================================
+           SLIDE 3: SOLUTION — One-sentence slice
+           =========================================== */
+        .slice-box {
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.06), rgba(245, 166, 35, 0.04));
+            border: 1.5px solid var(--border);
+            border-radius: 20px; padding: 48px 56px;
+            margin: 24px 0;
+        }
+        .slice-text {
+            font-family: var(--font-display);
+            font-size: 36px; font-weight: 500;
+            color: var(--text-primary); line-height: 1.55;
+        }
+        .slice-text em {
+            color: var(--accent); font-style: normal; font-weight: 600;
+        }
+        .four-parts {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 24px; margin-top: 36px;
+        }
+        .part-item {
+            text-align: center; padding: 28px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+        .part-item .part-icon {
+            font-size: 40px; margin-bottom: 12px;
+        }
+        .part-item .part-label {
+            font-family: var(--font-body);
+            font-size: 18px; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .part-item .part-value {
+            font-family: var(--font-display);
+            font-size: 24px; color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* ===========================================
+           SLIDE 4: FLOW — 5 Intent Routes
+           =========================================== */
+        .flow-diagram {
+            display: flex; flex-direction: column; gap: 18px;
+            margin-top: 24px; flex: 1; justify-content: center;
+        }
+        .flow-row {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .flow-intent {
+            width: 240px; text-align: right;
+            font-family: var(--font-display);
+            font-size: 26px; font-weight: 600;
+            color: var(--text-primary);
+            padding: 18px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .flow-arrow {
+            width: 80px; height: 3px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            position: relative;
+        }
+        .flow-arrow::after {
+            content: '→'; position: absolute; right: -8px; top: -12px;
+            color: var(--accent); font-size: 22px;
+        }
+        .flow-action {
+            flex: 1; padding: 18px 24px;
+            font-family: var(--font-body);
+            font-size: 22px; color: var(--text-secondary);
+            background: var(--bg-card);
+            border-radius: 12px;
+            border-left: 3px solid var(--accent);
+        }
+        .flow-action code {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 18px;
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent); padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        /* ===========================================
+           SLIDE 5: ARCHITECTURE
+           =========================================== */
+        .arch-layers {
+            display: flex; flex-direction: column; gap: 20px;
+            margin-top: 24px; flex: 1; justify-content: center;
+        }
+        .arch-layer {
+            display: flex; align-items: center; gap: 24px;
+            padding: 28px 36px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        .arch-layer.layer-input { background: linear-gradient(90deg, rgba(0, 212, 170, 0.06), transparent); }
+        .arch-layer.layer-engine { background: linear-gradient(90deg, rgba(245, 166, 35, 0.06), transparent); border-color: var(--border-warm); }
+        .arch-layer.layer-safety { background: linear-gradient(90deg, rgba(255, 107, 107, 0.06), transparent); border-color: rgba(255, 107, 107, 0.15); }
+        .arch-layer.layer-output { background: linear-gradient(90deg, rgba(0, 212, 170, 0.06), transparent); }
+
+        .arch-layer .layer-num {
+            font-family: var(--font-display);
+            font-size: 32px; font-weight: 700;
+            width: 52px; height: 52px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; flex-shrink: 0;
+        }
+        .layer-input .layer-num { background: rgba(0, 212, 170, 0.15); color: var(--accent); }
+        .layer-engine .layer-num { background: rgba(245, 166, 35, 0.15); color: var(--accent-warm); }
+        .layer-safety .layer-num { background: rgba(255, 107, 107, 0.15); color: var(--accent-danger); }
+        .layer-output .layer-num { background: rgba(0, 212, 170, 0.15); color: var(--accent); }
+
+        .arch-layer .layer-name {
+            font-family: var(--font-display);
+            font-size: 28px; font-weight: 600;
+            color: var(--text-primary);
+            min-width: 320px;
+        }
+        .arch-layer .layer-desc {
+            font-family: var(--font-body);
+            font-size: 22px; color: var(--text-secondary);
+            flex: 1;
+        }
+
+        /* ===========================================
+           SLIDE 6: SAFETY — 4 Error Classes
+           =========================================== */
+        .error-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 24px; margin-top: 24px; flex: 1;
+        }
+        .error-card {
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .error-card .error-id {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--font-display);
+            font-size: 18px; font-weight: 600;
+            padding: 6px 14px; border-radius: 8px;
+            margin-bottom: 14px;
+        }
+        .error-card.ec-1 .error-id { background: rgba(255, 107, 107, 0.12); color: var(--accent-danger); }
+        .error-card.ec-2 .error-id { background: rgba(245, 166, 35, 0.12); color: var(--accent-warm); }
+        .error-card.ec-3 .error-id { background: rgba(0, 212, 170, 0.12); color: var(--accent); }
+        .error-card.ec-4 .error-id { background: rgba(120, 120, 255, 0.12); color: #8888ff; }
+
+        .error-card .error-title {
+            font-family: var(--font-display);
+            font-size: 28px; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 10px;
+        }
+        .error-card .error-example {
+            font-family: var(--font-body);
+            font-size: 20px; color: var(--text-secondary);
+            line-height: 1.55;
+        }
+        .error-card .error-action {
+            font-family: var(--font-body);
+            font-size: 18px; color: var(--accent);
+            margin-top: 12px; font-weight: 500;
+        }
+
+        /* ===========================================
+           SLIDE 7: EVAL RESULTS
+           =========================================== */
+        .result-hero {
+            display: flex; gap: 40px; margin-top: 24px; align-items: stretch;
+        }
+        .result-big {
+            flex: 1;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.08), rgba(0, 212, 170, 0.02));
+            border: 1.5px solid rgba(0, 212, 170, 0.2);
+            border-radius: 24px; padding: 48px;
+        }
+        .result-big .big-number {
+            font-family: var(--font-display);
+            font-size: 120px; font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #4de8c7);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; line-height: 1;
+        }
+        .result-big .big-label {
+            font-family: var(--font-body);
+            font-size: 24px; color: var(--text-secondary);
+            margin-top: 12px;
+        }
+        .result-details {
+            flex: 1.2; display: flex; flex-direction: column; gap: 20px;
+            justify-content: center;
+        }
+        .result-item {
+            padding: 24px 28px;
+            background: var(--bg-card);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+        .result-item .ri-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .result-item .ri-label {
+            font-family: var(--font-body);
+            font-size: 22px; color: var(--text-primary); font-weight: 500;
+        }
+        .result-item .ri-value {
+            font-family: var(--font-display);
+            font-size: 28px; font-weight: 700;
+        }
+        .ri-value.pass { color: var(--accent); }
+        .ri-value.warn { color: var(--accent-warm); }
+        .result-bar {
+            height: 8px; border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+        .result-bar .bar-fill {
+            height: 100%; border-radius: 4px;
+            transition: width 1.2s var(--ease-out-expo);
+        }
+        .bar-fill.green { background: linear-gradient(90deg, var(--accent), #4de8c7); }
+        .bar-fill.amber { background: linear-gradient(90deg, var(--accent-warm), #f7c26b); }
+
+        /* ===========================================
+           SLIDE 8: LABCOACH WORKFLOW
+           =========================================== */
+        .workflow-steps {
+            display: flex; gap: 20px; margin-top: 32px; flex: 1;
+            align-items: stretch;
+        }
+        .wf-step {
+            flex: 1; padding: 32px 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex; flex-direction: column;
+            text-align: center;
+        }
+        .wf-step .wf-icon {
+            font-size: 48px; margin-bottom: 16px;
+        }
+        .wf-step .wf-num {
+            font-family: var(--font-display);
+            font-size: 16px; color: var(--accent);
+            letter-spacing: 3px; text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .wf-step .wf-title {
+            font-family: var(--font-display);
+            font-size: 26px; font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+        .wf-step .wf-desc {
+            font-family: var(--font-body);
+            font-size: 20px; color: var(--text-secondary);
+            line-height: 1.5; flex: 1;
+        }
+        .wf-connector {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: var(--text-muted);
+            flex-shrink: 0; width: 24px;
+        }
+
+        /* ===========================================
+           SLIDE 9: HAX/PAIR PRINCIPLES
+           =========================================== */
+        .principle-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px; margin-top: 24px; flex: 1;
+        }
+        .principle-card {
+            padding: 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex; flex-direction: column;
+        }
+        .principle-card .p-tag {
+            font-family: var(--font-body);
+            font-size: 15px; color: var(--accent);
+            text-transform: uppercase; letter-spacing: 3px;
+            font-weight: 600; margin-bottom: 12px;
+        }
+        .principle-card .p-title {
+            font-family: var(--font-display);
+            font-size: 26px; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 10px;
+        }
+        .principle-card .p-desc {
+            font-family: var(--font-body);
+            font-size: 20px; color: var(--text-secondary);
+            line-height: 1.5; flex: 1;
+        }
+
+        /* ===========================================
+           SLIDE 10: TEAM
+           =========================================== */
+        .team-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 28px; margin-top: 32px;
+        }
+        .team-card {
+            padding: 36px 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            text-align: center;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .team-card .avatar {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-warm));
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-display);
+            font-size: 36px; font-weight: 700; color: var(--bg-primary);
+            margin-bottom: 20px;
+        }
+        .team-card .t-name {
+            font-family: var(--font-display);
+            font-size: 24px; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 6px;
+        }
+        .team-card .t-id {
+            font-family: var(--font-body);
+            font-size: 16px; color: var(--text-muted); margin-bottom: 14px;
+        }
+        .team-card .t-role {
+            font-family: var(--font-body);
+            font-size: 18px; color: var(--accent);
+            font-weight: 500; margin-bottom: 8px;
+        }
+        .team-card .t-scope {
+            font-family: var(--font-body);
+            font-size: 16px; color: var(--text-secondary);
+            line-height: 1.45;
+        }
+        .team-card.leader { border-color: var(--accent); }
+        .team-card.leader .avatar {
+            box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 5px var(--accent);
+        }
+
+        .closing-cta {
+            margin-top: 48px; text-align: center;
+        }
+        .closing-cta .cta-text {
+            font-family: var(--font-display);
+            font-size: 32px; color: var(--text-secondary); font-weight: 500;
+        }
+        .closing-cta .cta-text em {
+            color: var(--accent); font-style: normal;
+        }
+
+        /* ===========================================
+           PROGRESS BAR
+           =========================================== */
+        .progress-bar {
+            position: fixed; top: 0; left: 0;
+            height: 3px; z-index: 2000;
+            background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+            transition: width 0.4s var(--ease-out-expo);
+        }
+
+        /* ===========================================
+           NAV HINT
+           =========================================== */
+        .nav-hint {
+            position: fixed; bottom: 28px; right: 40px;
+            font-family: var(--font-body); font-size: 14px;
+            color: var(--text-muted); z-index: 1000;
+            letter-spacing: 1px;
+        }
+        .slide-counter {
+            position: fixed; bottom: 28px; left: 40px;
+            font-family: var(--font-body); font-size: 14px;
+            color: var(--text-muted); z-index: 1000;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ===========================================
+           INLINE EDITING
+           =========================================== */
+        .edit-hotzone {
+            position: fixed; top: 0; left: 0;
+            width: 80px; height: 80px;
+            z-index: 10000; cursor: pointer;
+        }
+        .edit-toggle {
+            position: fixed; top: 16px; left: 16px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 10px; padding: 8px 14px;
+            font-size: 18px; cursor: pointer;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10001; color: var(--text-primary);
+        }
+        .edit-toggle.show, .edit-toggle.active {
+            opacity: 1; pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- =============================================
+                 SLIDE 1: TITLE
+                 ============================================= -->
+            <section class="slide title-slide active" aria-label="Title">
+                <div class="grid-overlay"></div>
+                <div class="gradient-orb orb-1"></div>
+                <div class="gradient-orb orb-2"></div>
+                <div class="slide-inner">
+                    <div class="team-badge reveal">Nhóm Discord Message</div>
+                    <h1 class="reveal"><span>Trợ lý Học viên</span><br>Discord</h1>
+                    <p class="subtitle reveal">Định tuyến câu hỏi thông minh · An toàn nguồn sự thật · Không bịa đặt</p>
+                    <p class="meta-line reveal">AI Product Hackathon — Khóa AI Thực Chiến · Tháng 7/2026</p>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 2: PROBLEM
+                 ============================================= -->
+            <section class="slide" aria-label="Problem">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Vấn đề</p>
+                    <h2 class="slide-title reveal" style="font-size: 52px;">Câu hỏi bị trôi, thông tin sai<br>= Học viên mất niềm tin</h2>
+                    <div class="pain-cards">
+                        <div class="pain-card reveal" style="transition-delay: 0.2s">
+                            <div class="quote">"Thông tin bị trôi, thắc mắc không được TA giải đáp"</div>
+                            <div class="source">— Học viên Cohort 3, Khảo sát 30/07</div>
+                        </div>
+                        <div class="stat-highlight reveal" style="transition-delay: 0.3s">
+                            <div class="stat-number">16/18</div>
+                            <div class="stat-label">học viên gặp tình trạng tin nhắn bị trôi trong Discord</div>
+                        </div>
+                        <div class="stat-highlight reveal" style="transition-delay: 0.4s">
+                            <div class="stat-number">56</div>
+                            <div class="stat-label">câu hỏi khai thác từ chatlog Discord cần phân loại chính xác</div>
+                        </div>
+                        <div class="pain-card reveal" style="transition-delay: 0.5s">
+                            <div class="quote">"Khó tìm ra thông tin mình muốn … không biết hôm đó phải làm gì ở đâu"</div>
+                            <div class="source">— Học viên Cohort 3</div>
+                        </div>
+                    </div>
+                    <span class="slide-number">02</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 3: SOLUTION — Lát cắt
+                 ============================================= -->
+            <section class="slide" aria-label="Solution">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Giải pháp — Lát cắt một câu</p>
+                    <h2 class="slide-title reveal" style="font-size: 48px;">Answer-or-Handoff</h2>
+                    <div class="slice-box reveal" style="transition-delay: 0.25s">
+                        <p class="slice-text">Khi <em>một học viên</em> đăng câu hỏi trong Discord, trợ lý <em>phân loại intent</em> và chọn hành động <em>trả lời · hỏi lại · chuyển TA · từ chối</em>, để học viên nhận được hỗ trợ đúng mức mà <em>không bị cung cấp thông tin thiếu căn cứ</em>.</p>
+                    </div>
+                    <div class="four-parts">
+                        <div class="part-item reveal" style="transition-delay: 0.35s">
+                            <div class="part-icon">👤</div>
+                            <div class="part-label">Một user</div>
+                            <div class="part-value">Học viên Discord</div>
+                        </div>
+                        <div class="part-item reveal" style="transition-delay: 0.42s">
+                            <div class="part-icon">📝</div>
+                            <div class="part-label">Một việc</div>
+                            <div class="part-value">Nhận hướng xử lý</div>
+                        </div>
+                        <div class="part-item reveal" style="transition-delay: 0.49s">
+                            <div class="part-icon">🤖</div>
+                            <div class="part-label">Một quyết định AI</div>
+                            <div class="part-value">Phân loại & route</div>
+                        </div>
+                        <div class="part-item reveal" style="transition-delay: 0.56s">
+                            <div class="part-icon">✅</div>
+                            <div class="part-label">Một kết quả</div>
+                            <div class="part-value">Phản hồi hoặc handoff</div>
+                        </div>
+                    </div>
+                    <span class="slide-number">03</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 4: FLOW — 5 Intent Routes
+                 ============================================= -->
+            <section class="slide" aria-label="Intent Routes">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Luồng xử lý</p>
+                    <h2 class="slide-title reveal" style="font-size: 48px;">5 Intent · 5 Action tương ứng</h2>
+                    <div class="flow-diagram">
+                        <div class="flow-row reveal" style="transition-delay: 0.2s">
+                            <div class="flow-intent">🙋 Chào hỏi</div>
+                            <div class="flow-arrow"></div>
+                            <div class="flow-action"><code>direct_answer</code> — Chào lại thân thiện, giới thiệu phạm vi hỗ trợ</div>
+                        </div>
+                        <div class="flow-row reveal" style="transition-delay: 0.3s">
+                            <div class="flow-intent">📚 Hỏi bài</div>
+                            <div class="flow-arrow"></div>
+                            <div class="flow-action"><code>direct_answer</code> — Hướng dẫn tư duy, gợi ý từng bước (không làm hộ)</div>
+                        </div>
+                        <div class="flow-row reveal" style="transition-delay: 0.4s">
+                            <div class="flow-intent">📋 Logistics</div>
+                            <div class="flow-arrow"></div>
+                            <div class="flow-action"><code>direct_answer</code> nếu có nguồn · <code>handoff_to_ta</code> nếu không</div>
+                        </div>
+                        <div class="flow-row reveal" style="transition-delay: 0.5s">
+                            <div class="flow-intent">❓ Mơ hồ</div>
+                            <div class="flow-arrow"></div>
+                            <div class="flow-action"><code>ask_clarifying_question</code> — Hỏi tên bài, bước đang vướng</div>
+                        </div>
+                        <div class="flow-row reveal" style="transition-delay: 0.6s">
+                            <div class="flow-intent">🚫 Ngoài phạm vi</div>
+                            <div class="flow-arrow"></div>
+                            <div class="flow-action"><code>refuse_and_redirect</code> — Từ chối + gợi ý hướng an toàn</div>
+                        </div>
+                    </div>
+                    <span class="slide-number">04</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 5: ARCHITECTURE
+                 ============================================= -->
+            <section class="slide" aria-label="Architecture">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Kiến trúc</p>
+                    <h2 class="slide-title reveal" style="font-size: 48px;">Pipeline 4 lớp</h2>
+                    <div class="arch-layers">
+                        <div class="arch-layer layer-input reveal" style="transition-delay: 0.2s">
+                            <div class="layer-num">1</div>
+                            <div class="layer-name">Input Layer</div>
+                            <div class="layer-desc">Tin nhắn học viên + Conversation Context v1 (hiểu câu hỏi nối tiếp)</div>
+                        </div>
+                        <div class="arch-layer layer-engine reveal" style="transition-delay: 0.32s">
+                            <div class="layer-num">2</div>
+                            <div class="layer-name">Intent Engine</div>
+                            <div class="layer-desc">Gemini <code style="color: var(--accent-warm)">gemini-3.5-flash-lite</code> phân loại intent + confidence + chọn action</div>
+                        </div>
+                        <div class="arch-layer layer-safety reveal" style="transition-delay: 0.44s">
+                            <div class="layer-num">3</div>
+                            <div class="layer-name">Safety Contract</div>
+                            <div class="layer-desc">Validator kiểm JSON · allowlist (intent, action) · ép confidence thấp → hỏi lại · Zero Hallucination Logistics</div>
+                        </div>
+                        <div class="arch-layer layer-output reveal" style="transition-delay: 0.56s">
+                            <div class="layer-num">4</div>
+                            <div class="layer-name">Output + Knowledge</div>
+                            <div class="layer-desc">Human-Approved Knowledge retrieval · 28 FAQ đã duyệt · Handoff Queue SQLite persistent</div>
+                        </div>
+                    </div>
+                    <span class="slide-number">05</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 6: SAFETY — 4 Error Classes
+                 ============================================= -->
+            <section class="slide" aria-label="Safety">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">An toàn</p>
+                    <h2 class="slide-title reveal" style="font-size: 48px;">4 lớp chỗ khó — Xử lý cụ thể</h2>
+                    <div class="error-grid">
+                        <div class="error-card ec-1 reveal" style="transition-delay: 0.2s">
+                            <div class="error-id">① Nguồn sự thật</div>
+                            <div class="error-title">Thiếu căn cứ chính thức</div>
+                            <div class="error-example">"Deadline CP3 khi nào?" — nhưng không có nguồn</div>
+                            <div class="error-action">→ Không bịa · Nói rõ giới hạn · Chuyển TA</div>
+                        </div>
+                        <div class="error-card ec-2 reveal" style="transition-delay: 0.3s">
+                            <div class="error-id">② Mơ hồ / thiếu thông tin</div>
+                            <div class="error-title">Input không đủ rõ</div>
+                            <div class="error-example">"Cái này làm sao?" — Chưa rõ bài nào, bước nào</div>
+                            <div class="error-action">→ Hỏi lại tên bài, bước vướng, điều đã thử</div>
+                        </div>
+                        <div class="error-card ec-3 reveal" style="transition-delay: 0.4s">
+                            <div class="error-id">③ Ngoài phạm vi</div>
+                            <div class="error-title">Yêu cầu không được phép</div>
+                            <div class="error-example">"Làm hộ toàn bộ bài" / "Lấy API key hệ thống"</div>
+                            <div class="error-action">→ Từ chối · Đề nghị giải thích từng bước</div>
+                        </div>
+                        <div class="error-card ec-4 reveal" style="transition-delay: 0.5s">
+                            <div class="error-id">④ Đặc thù domain</div>
+                            <div class="error-title">Sai = mất điểm, mất niềm tin</div>
+                            <div class="error-example">Logistics bị phân loại nhầm → bịa deadline/link</div>
+                            <div class="error-action">→ Ưu tiên an toàn · Fail-safe về handoff</div>
+                        </div>
+                    </div>
+                    <span class="slide-number">06</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 7: EVAL RESULTS
+                 ============================================= -->
+            <section class="slide" aria-label="Eval Results">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Kết quả kiểm thử</p>
+                    <h2 class="slide-title reveal" style="font-size: 48px;">Golden Eval — 22 test cases · Gemini live</h2>
+                    <div class="result-hero">
+                        <div class="result-big reveal-scale" style="transition-delay: 0.3s">
+                            <div class="big-number" data-target="90.9">0</div>
+                            <div class="big-label">% Overall Pass Rate<br>(20/22 cases)</div>
+                        </div>
+                        <div class="result-details">
+                            <div class="result-item reveal-right" style="transition-delay: 0.35s">
+                                <div class="ri-header">
+                                    <span class="ri-label">Out-of-scope rejection</span>
+                                    <span class="ri-value pass">100% (5/5)</span>
+                                </div>
+                                <div class="result-bar"><div class="bar-fill green" data-width="100"></div></div>
+                            </div>
+                            <div class="result-item reveal-right" style="transition-delay: 0.45s">
+                                <div class="ri-header">
+                                    <span class="ri-label">Zero Hallucination Logistics</span>
+                                    <span class="ri-value warn">83.3% (5/6)</span>
+                                </div>
+                                <div class="result-bar"><div class="bar-fill amber" data-width="83.3"></div></div>
+                            </div>
+                            <div class="result-item reveal-right" style="transition-delay: 0.55s">
+                                <div class="ri-header">
+                                    <span class="ri-label">Safety Fallback</span>
+                                    <span class="ri-value pass">0 fallbacks</span>
+                                </div>
+                                <div class="result-bar"><div class="bar-fill green" data-width="100"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="slide-body reveal" style="margin-top: 32px; font-size: 22px; color: var(--accent-warm); transition-delay: 0.6s">
+                        ⚠ Quality Bar: NOT MET / HOLD — Điều kiện cứng logistics chỉ đạt 5/6. Đang cải thiện.
+                    </p>
+                    <span class="slide-number">07</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 8: LABCOACH WORKFLOW
+                 ============================================= -->
+            <section class="slide" aria-label="Labcoach Workflow">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Quy trình Labcoach</p>
+                    <h2 class="slide-title reveal" style="font-size: 44px;">Từ câu hỏi tồn → Knowledge mới cho khoá học</h2>
+                    <div class="workflow-steps">
+                        <div class="wf-step reveal" style="transition-delay: 0.2s">
+                            <div class="wf-icon">📥</div>
+                            <div class="wf-num">Bước 1</div>
+                            <div class="wf-title">Handoff Queue</div>
+                            <div class="wf-desc">Câu hỏi thiếu nguồn tự động vào hàng chờ SQLite persistent</div>
+                        </div>
+                        <div class="wf-connector reveal" style="transition-delay: 0.28s">→</div>
+                        <div class="wf-step reveal" style="transition-delay: 0.32s">
+                            <div class="wf-icon">💬</div>
+                            <div class="wf-num">Bước 2</div>
+                            <div class="wf-title">Labcoach trả lời</div>
+                            <div class="wf-desc">Câu trả lời được capture thành Knowledge Candidate</div>
+                        </div>
+                        <div class="wf-connector reveal" style="transition-delay: 0.4s">→</div>
+                        <div class="wf-step reveal" style="transition-delay: 0.44s">
+                            <div class="wf-icon">✅</div>
+                            <div class="wf-num">Bước 3</div>
+                            <div class="wf-title">Review & Publish</div>
+                            <div class="wf-desc">Duyệt nội dung → Publish vào kho kiến thức chính thức</div>
+                        </div>
+                        <div class="wf-connector reveal" style="transition-delay: 0.52s">→</div>
+                        <div class="wf-step reveal" style="transition-delay: 0.56s">
+                            <div class="wf-icon">📊</div>
+                            <div class="wf-num">Bước 4</div>
+                            <div class="wf-title">Daily Digest</div>
+                            <div class="wf-desc">Báo cáo tổng hợp cuối ngày — nhóm câu trùng (Jaccard)</div>
+                        </div>
+                    </div>
+                    <span class="slide-number">08</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 9: HAX/PAIR PRINCIPLES
+                 ============================================= -->
+            <section class="slide" aria-label="Design Principles">
+                <div class="grid-overlay"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Nguyên tắc thiết kế</p>
+                    <h2 class="slide-title reveal" style="font-size: 48px;">HAX / PAIR — Áp dụng cụ thể</h2>
+                    <div class="principle-grid">
+                        <div class="principle-card reveal" style="transition-delay: 0.2s">
+                            <div class="p-tag">G1</div>
+                            <div class="p-title">Làm rõ khả năng</div>
+                            <div class="p-desc">Lời chào đầu & sidebar liệt kê phạm vi: hỏi bài, logistics, hỏi lại, chuyển TA</div>
+                        </div>
+                        <div class="principle-card reveal" style="transition-delay: 0.3s">
+                            <div class="p-tag">G2</div>
+                            <div class="p-title">Làm rõ mức độ</div>
+                            <div class="p-desc">Badge trạng thái AI (Live / Fallback), nhãn intent & confidence kèm mỗi phản hồi</div>
+                        </div>
+                        <div class="principle-card reveal" style="transition-delay: 0.4s">
+                            <div class="p-tag">G10</div>
+                            <div class="p-title">Thu hẹp khi nghi ngờ</div>
+                            <div class="p-desc">Route ambiguous hỏi tên bài, bước đang vướng và điều đã thử thay vì đoán</div>
+                        </div>
+                        <div class="principle-card reveal" style="transition-delay: 0.5s">
+                            <div class="p-tag">G11</div>
+                            <div class="p-title">Giải thích vì sao</div>
+                            <div class="p-desc">Expander "Vì sao trợ lý chọn đường này?" hiển thị rationale cho mỗi quyết định</div>
+                        </div>
+                        <div class="principle-card reveal" style="transition-delay: 0.6s">
+                            <div class="p-tag">G9</div>
+                            <div class="p-title">Sửa dễ dàng</div>
+                            <div class="p-desc">Học viên nhập câu mới trong cùng hội thoại để bổ sung hoặc sửa ngữ cảnh</div>
+                        </div>
+                        <div class="principle-card reveal" style="transition-delay: 0.7s">
+                            <div class="p-tag">Graceful Failure</div>
+                            <div class="p-title">Lỗi an toàn</div>
+                            <div class="p-desc">Logistics thiếu nguồn → chuyển TA. Ngoài phạm vi → từ chối + gợi ý cách học an toàn</div>
+                        </div>
+                    </div>
+                    <span class="slide-number">09</span>
+                </div>
+            </section>
+
+            <!-- =============================================
+                 SLIDE 10: TEAM & CLOSING
+                 ============================================= -->
+            <section class="slide" aria-label="Team">
+                <div class="grid-overlay"></div>
+                <div class="gradient-orb" style="width: 500px; height: 500px; bottom: -100px; right: -80px; background: radial-gradient(circle, rgba(0, 212, 170, 0.1), transparent 70%);"></div>
+                <div class="slide-inner">
+                    <p class="section-label reveal">Nhóm Discord Message</p>
+                    <h2 class="slide-title reveal" style="font-size: 48px;">Đội ngũ phát triển</h2>
+                    <div class="team-grid">
+                        <div class="team-card leader reveal" style="transition-delay: 0.2s">
+                            <div class="avatar">V</div>
+                            <div class="t-name">Nguyễn Tuấn Vũ</div>
+                            <div class="t-id">2A202601845</div>
+                            <div class="t-role">Nhóm trưởng</div>
+                            <div class="t-scope">Prompting &<br>Safety Contract</div>
+                        </div>
+                        <div class="team-card reveal" style="transition-delay: 0.3s">
+                            <div class="avatar">T</div>
+                            <div class="t-name">Nguyễn Hữu Khánh Tùng</div>
+                            <div class="t-id">2A202601781</div>
+                            <div class="t-role">Prototype</div>
+                            <div class="t-scope">App & Architecture</div>
+                        </div>
+                        <div class="team-card reveal" style="transition-delay: 0.4s">
+                            <div class="avatar">H</div>
+                            <div class="t-name">Nguyễn Phúc Hưng</div>
+                            <div class="t-id">2A202601115</div>
+                            <div class="t-role">Spec & Evidence</div>
+                            <div class="t-scope">Audit &<br>Impact Analysis</div>
+                        </div>
+                        <div class="team-card reveal" style="transition-delay: 0.5s">
+                            <div class="avatar">P</div>
+                            <div class="t-name">Nguyễn Văn Phong</div>
+                            <div class="t-id">2A202601087</div>
+                            <div class="t-role">Evaluation</div>
+                            <div class="t-scope">Golden set &<br>Eval Runner</div>
+                        </div>
+                    </div>
+                    <div class="closing-cta reveal" style="transition-delay: 0.6s">
+                        <p class="cta-text"><em>Answer-or-Handoff</em> — Trả lời đúng mức, không bịa đặt.</p>
+                    </div>
+                    <span class="slide-number">10</span>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Nav hint & counter -->
+    <div class="slide-counter" id="slideCounter">01 / 10</div>
+    <div class="nav-hint">← → Space · Swipe</div>
+
+    <!-- Inline editing controls -->
+    <div class="edit-hotzone"></div>
+    <button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏️ Edit</button>
+
+    <script>
+        /* ===========================================
+           SLIDE PRESENTATION CONTROLLER
+           =========================================== */
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.progressBar = document.getElementById('progressBar');
+                this.counter = document.getElementById('slideCounter');
+                this.total = this.slides.length;
+                this.isTransitioning = false;
+
+                this.setupStageScale();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupWheelNav();
+                this.showSlide(0);
+            }
+
+            /* --- Stage scaling: uniform fit to viewport --- */
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            /* --- Keyboard navigation --- */
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.getAttribute('contenteditable')) return;
+                    switch (e.key) {
+                        case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
+                            e.preventDefault(); this.next(); break;
+                        case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+                            e.preventDefault(); this.prev(); break;
+                        case 'Home': e.preventDefault(); this.showSlide(0); break;
+                        case 'End': e.preventDefault(); this.showSlide(this.total - 1); break;
+                    }
+                });
+            }
+
+            /* --- Touch / swipe --- */
+            setupTouchNav() {
+                let startX = 0, startY = 0;
+                this.stage.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                }, { passive: true });
+                this.stage.addEventListener('touchend', (e) => {
+                    const dx = e.changedTouches[0].clientX - startX;
+                    const dy = e.changedTouches[0].clientY - startY;
+                    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                        dx < 0 ? this.next() : this.prev();
+                    }
+                }, { passive: true });
+            }
+
+            /* --- Mouse wheel --- */
+            setupWheelNav() {
+                let wheelTimeout = null;
+                document.addEventListener('wheel', (e) => {
+                    if (wheelTimeout) return;
+                    e.preventDefault();
+                    if (e.deltaY > 0) this.next(); else this.prev();
+                    wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 600);
+                }, { passive: false });
+            }
+
+            next() { this.showSlide(this.currentSlide + 1); }
+            prev() { this.showSlide(this.currentSlide - 1); }
+
+            showSlide(index) {
+                if (this.isTransitioning) return;
+                index = Math.max(0, Math.min(index, this.total - 1));
+                if (index === this.currentSlide && this.slides[index].classList.contains('visible')) return;
+
+                this.isTransitioning = true;
+                this.currentSlide = index;
+
+                this.slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === index);
+                    slide.classList.toggle('visible', i === index);
+                });
+
+                /* Progress bar */
+                const pct = ((index + 1) / this.total) * 100;
+                this.progressBar.style.width = pct + '%';
+
+                /* Counter */
+                this.counter.textContent =
+                    String(index + 1).padStart(2, '0') + ' / ' + String(this.total).padStart(2, '0');
+
+                /* Animate result bars if on eval slide */
+                this.animateResultBars(index);
+
+                /* Counter animation on eval slide */
+                this.animateCounters(index);
+
+                setTimeout(() => { this.isTransitioning = false; }, 400);
+            }
+
+            /* --- Animated result bars (slide 7, index 6) --- */
+            animateResultBars(index) {
+                if (index === 6) {
+                    setTimeout(() => {
+                        document.querySelectorAll('.bar-fill').forEach(bar => {
+                            bar.style.width = bar.dataset.width + '%';
+                        });
+                    }, 500);
+                } else {
+                    document.querySelectorAll('.bar-fill').forEach(bar => {
+                        bar.style.width = '0%';
+                    });
+                }
+            }
+
+            /* --- Counter animation for big number --- */
+            animateCounters(index) {
+                if (index === 6) {
+                    const el = document.querySelector('.big-number[data-target]');
+                    if (!el) return;
+                    const target = parseFloat(el.dataset.target);
+                    let current = 0;
+                    const step = target / 40;
+                    const interval = setInterval(() => {
+                        current += step;
+                        if (current >= target) { current = target; clearInterval(interval); }
+                        el.textContent = current.toFixed(1);
+                    }, 25);
+                }
+            }
+        }
+
+        /* ===========================================
+           INLINE EDITOR
+           =========================================== */
+        class InlineEditor {
+            constructor() {
+                this.isActive = false;
+                this.toggle = document.getElementById('editToggle');
+            }
+            toggleEditMode() {
+                this.isActive = !this.isActive;
+                this.toggle.classList.toggle('active', this.isActive);
+                document.querySelectorAll('.slide h1, .slide h2, .slide p, .slide .quote, .slide .wf-desc, .slide .wf-title, .slide .part-value, .slide .p-desc, .slide .p-title, .slide .error-title, .slide .error-example, .slide .error-action, .slide .layer-name, .slide .layer-desc, .slide .flow-action, .slide .t-scope, .slide .t-role, .slide .t-name').forEach(el => {
+                    el.contentEditable = this.isActive;
+                    el.style.outline = this.isActive ? '1px dashed rgba(0,212,170,0.3)' : 'none';
+                    el.style.cursor = this.isActive ? 'text' : '';
+                });
+            }
+        }
+        const editor = new InlineEditor();
+
+        /* Edit toggle: JS hover with 400ms delay */
+        const hotzone = document.querySelector('.edit-hotzone');
+        const editToggle = document.getElementById('editToggle');
+        let hideTimeout = null;
+
+        hotzone.addEventListener('mouseenter', () => {
+            clearTimeout(hideTimeout);
+            editToggle.classList.add('show');
+        });
+        hotzone.addEventListener('mouseleave', () => {
+            hideTimeout = setTimeout(() => {
+                if (!editor.isActive) editToggle.classList.remove('show');
+            }, 400);
+        });
+        editToggle.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); });
+        editToggle.addEventListener('mouseleave', () => {
+            hideTimeout = setTimeout(() => {
+                if (!editor.isActive) editToggle.classList.remove('show');
+            }, 400);
+        });
+        hotzone.addEventListener('click', () => { editor.toggleEditMode(); });
+        editToggle.addEventListener('click', () => { editor.toggleEditMode(); });
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+                editor.toggleEditMode();
+            }
+        });
+
+        /* ===========================================
+           INIT
+           =========================================== */
+        const deck = new SlidePresentation();
+    </script>
+</body>
+</html>
